@@ -1,0 +1,8 @@
+Copyright (c) 2026 Alma. All rights reserved.
+
+This software and its content (including recipes, evidence summaries and copy)
+are proprietary. No part may be copied, modified, distributed, sold or hosted
+publicly without prior written permission from the copyright holder.
+
+Evidence summaries reference published guidance from named public bodies; those
+sources remain the property of their respective owners.

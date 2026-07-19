@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#faf6ef" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#191d1a" media="(prefers-color-scheme: dark)">
+  <meta name="description" content="Alma: a private diet and lifestyle companion. Whole food meal plans, gentle habits, and the evidence behind every suggestion. Your data never leaves your device.">
+  <title>Alma · Know first, then choose</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icons/icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+  <div id="app" class="app">
+    <aside class="sidebar" id="sidebar" aria-label="Main navigation">
+      <div class="brand">
+        <svg class="brand-mark" viewBox="0 0 48 48" aria-hidden="true"><use href="icons/icon.svg#mark"></use></svg>
+        <div class="brand-text">
+          <span class="brand-name">Alma</span>
+          <span class="brand-tag">Know first, then choose</span>
+        </div>
+      </div>
+      <nav class="nav" id="nav"></nav>
+      <p class="sidebar-foot">General information, never medical advice.<br>Your doctor knows your case.</p>
+    </aside>
+
+    <main class="main" id="main" tabindex="-1"></main>
+
+    <nav class="tabbar" id="tabbar" aria-label="Main navigation"></nav>
+  </div>
+
+  <div id="modal-root"></div>
+  <div id="toast-root" aria-live="polite"></div>
+
+  <noscript>
+    <div style="padding:2rem;font-family:system-ui;max-width:32rem;margin:0 auto">
+      <h1>Alma needs JavaScript</h1>
+      <p>Everything runs privately on your device, which is why the app needs JavaScript turned on. No data is sent anywhere.</p>
+    </div>
+  </noscript>
+
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
