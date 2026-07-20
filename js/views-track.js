@@ -217,7 +217,7 @@ export function renderLearn(main) {
         el("p", { class: "one-liner" }, c.oneLiner),
       );
     }),
-    el("p", { class: "tiny center" }, "General information from published guidance, never medical advice. Your doctor knows your case."),
+    el("p", { class: "tiny center" }, "Every card exists so you can decide from evidence, not marketing. And because Alma never plays doctor, you can trust it to hand the medical questions to yours, better phrased."),
   );
 }
 
@@ -254,7 +254,7 @@ export function renderMore(main, navigate) {
     el("div", { class: "card flat" },
       el("h3", {}, "About Alma"),
       el("p", { class: "muted" }, "Built by someone who learned the hard way that the best time to care about your health is before you have to. Everything here follows one idea: know first, then choose."),
-      el("p", { class: "tiny" }, "General information, never medical advice. No account, no cloud: your data stays on this device."),
+      el("p", { class: "tiny" }, "Private like a paper journal, useful like an app: everything stays on this device, so it cannot be leaked, sold or fed to an ad machine. Medical decisions stay with your doctor, which is exactly why you can relax here."),
     ),
   );
 }
@@ -531,10 +531,10 @@ export function renderSettings(main, navigate) {
     el("div", { class: "card flat" },
       el("h2", {}, "The promises"),
       el("ul", { class: "muted", style: "padding-left:1.1rem" },
-        el("li", {}, "General information with named sources, never medical advice."),
-        el("li", {}, "No diagnosis, no prescriptions, no symptom checking. Ever."),
-        el("li", {}, "No weight tracking, no calories, no punishments, no streaks."),
-        el("li", {}, "Your data never leaves this device. There is no server to leave to."),
+        el("li", {}, "Named sources on every suggestion, so you never have to take Alma\u2019s word for anything."),
+        el("li", {}, "No diagnosis and no symptom checking, so this app can never frighten you at midnight. It sends you to the right person with better questions instead."),
+        el("li", {}, "No weight, calories, punishments or streaks: a companion you can keep for years without it ever turning on you."),
+        el("li", {}, "Your data never leaves this device because there is no server to leave to. Privacy here is physics, not a policy that can quietly change."),
       ),
     ),
   );

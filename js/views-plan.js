@@ -27,10 +27,10 @@ export function renderOnboarding(main, navigate) {
       el("h1", { class: "center" }, "Alma"),
       el("p", { class: "center muted" }, "Know first, then choose."),
       el("div", { class: "card", style: "margin-top:1.2rem" },
-        el("h3", {}, "Before we start, the honest part"),
-        el("p", { class: "muted" }, "Alma offers general information about food, movement and sleep, drawn from published guidelines and named sources. It is not medical advice. It never diagnoses, never prescribes, and it will never comment on your weight."),
-        el("p", { class: "muted" }, "Your doctor knows your case. For anything medical, including symptoms, results, medication and supplements, they are the right person, and this app will help you prepare questions for them rather than answer them itself."),
-        el("p", { class: "muted" }, "Everything you enter stays on this device. No account, no cloud, no tracking."),
+        el("h3", {}, "Three promises, and what they buy you"),
+        el("p", { class: "muted" }, "Every suggestion arrives with its reason and a named source, so you choose from knowledge instead of headlines. Alma never diagnoses, never prescribes and never mentions your weight, which means you get clarity here without the 2 am anxiety spiral."),
+        el("p", { class: "muted" }, "Your doctor stays your doctor. For symptoms, results, medication and supplements, Alma\u2019s job is to send you into the appointment with sharper questions and a cleaner timeline, so the ten minutes you get are worth twenty."),
+        el("p", { class: "muted" }, "Everything lives on this device only. No account to create, no password to forget, and nothing to hack, leak or sell: your meals, numbers and letters stay as private as the drawer beside your bed."),
       ),
       el("button", {
         class: "btn", style: "width:100%",
@@ -163,7 +163,7 @@ export function renderToday(main, navigate) {
       el("div", { class: "pulse-grid" }, pulses),
     ),
 
-    s.activeNudge && renderNudgeCard(s),
+    ...(s.activeNudge ? [renderNudgeCard(s)] : []),
 
     el("div", { class: "card" },
       el("div", { class: "card-title-row" }, el("h2", {}, "The week"), el("button", { class: "link", onclick: () => navigate("#/plan") }, "Open plan")),
@@ -174,7 +174,7 @@ export function renderToday(main, navigate) {
         )),
     ),
 
-    el("p", { class: "tiny center" }, "General information, never medical advice. Your doctor knows your case."),
+    el("p", { class: "tiny center" }, "Knowledge with sources, so the choices stay yours. The medical calls stay with your doctor, where they are safest."),
   );
 }
 

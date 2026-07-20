@@ -174,15 +174,15 @@ export function renderSignals(main) {
             )))
         : el("p", { class: "muted" }, "No labs recorded yet."),
     ),
-    readings.length ? el("div", { class: "card flat" },
+    ...(readings.length ? [el("div", { class: "card flat" },
       el("h3", {}, "Recent readings"),
       ...readings.slice(0, 8).map((r) => el("div", { class: "reading-row" },
         el("span", { class: "r-val" }, r.type === "glucose" ? displayGlucose(r.v).v + " " + displayGlucose(r.v).unit : r.v + " mmol/L ketones"),
         el("span", { class: "r-meta" }, new Date(r.t).toLocaleString("en-AU", { day: "numeric", month: "short", hour: "numeric", minute: "2-digit" }) + (r.ctx ? " · " + r.ctx : "")),
         el("span", {}),
       )),
-    ) : null,
-    el("p", { class: "tiny center" }, "General information, never medical advice. Numbers that worry you belong in front of your doctor, today rather than Friday."),
+    )] : []),
+    el("p", { class: "tiny center" }, "Alma charts so the patterns jump out; your doctor interprets so nothing gets missed. That split is what makes these numbers useful instead of frightening. A reading that worries you is worth a call today, not Friday."),
   );
 }
 
@@ -227,7 +227,7 @@ function importCSVModal(main) {
   const unit = el("select", {}, el("option", { value: "mmol" }, "mmol/L"), el("option", { value: "mgdl" }, "mg/dL"));
   openModal(
     el("h2", {}, "Import from a sensor export"),
-    el("p", { class: "muted" }, "Export a CSV from LibreView, Dexcom Clarity, Keto-Mojo or similar, then choose it here. Alma reads it on the device; nothing uploads anywhere."),
+    el("p", { class: "muted" }, "Export a CSV from LibreView, Dexcom Clarity, Keto-Mojo or similar, then choose it here. Alma reads it right here on the device: your glucose history becomes insight for you, and never marketing data for anyone."),
     el("div", { class: "field" }, el("label", {}, "File"), file),
     el("div", { class: "field" }, el("label", {}, "These are"), type),
     el("div", { class: "field" }, el("label", {}, "Unit in the file"), unit),

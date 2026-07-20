@@ -55,7 +55,7 @@ export const SOUNDSCAPES = [
   { id: "ocean", name: "Ocean air", sub: "slow waves of breath", engine: "ocean" },
   { id: "night-rain", name: "Night rain", sub: "soft, steady, close", engine: "rain" },
 ];
-export const SOUND_HONESTY = "The calm these tones bring is real and worth having. Claims that specific frequencies heal the body are not supported by good evidence, so Alma promises presence, not medicine.";
+export const SOUND_HONESTY = "Ten minutes here is a real deposit: a nervous system that gets regular rest sleeps better, eats calmer and has more patience for the people you love. That benefit is proven; the claim that specific frequencies heal the body is not, so Alma promises you the calm and skips the mysticism.";
 
 // ---------- fasting ----------
 export const FAST_PROTOCOLS = [

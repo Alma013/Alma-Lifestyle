@@ -203,7 +203,7 @@ export function renderCapsule(main, navigate) {
       el("button", { class: "btn", onclick: () => writeCapsule(() => renderCapsule(main, navigate)) }, "Write a letter"),
     ),
     ...list,
-    el("p", { class: "tiny center", style: "margin-top:1rem" }, "Letters live only on this device. Export a backup in Settings and keep it somewhere your family can find."),
+    el("p", { class: "tiny center", style: "margin-top:1rem" }, "Letters live only on this device, so they stay exactly as private as the moment you wrote them. Download a backup in Settings and keep it where your family can find it: one small file, your voice in it, safe for decades."),
   );
 }
 
