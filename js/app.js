@@ -3,7 +3,7 @@
 import { el, icon } from "./ui.js";
 import { store } from "./store.js";
 import { renderOnboarding, renderToday, renderPlan, renderGroceries, renderRecipes } from "./views-plan.js";
-import { renderTrack, renderLearn, renderMore } from "./views-track.js";
+import { renderTrack, renderLearn, renderMore, renderCareGate, renderSettings } from "./views-track.js";
 
 const ROUTES = [
   { hash: "#/", label: "Today", icon: "home", render: renderToday },
@@ -15,6 +15,8 @@ const ROUTES = [
 const HIDDEN_ROUTES = [
   { hash: "#/groceries", render: renderGroceries, parent: "#/plan" },
   { hash: "#/recipes", render: renderRecipes, parent: "#/plan" },
+  { hash: "#/care", render: renderCareGate, parent: "#/more" },
+  { hash: "#/settings", render: renderSettings, parent: "#/more" },
 ];
 
 const main = document.getElementById("main");

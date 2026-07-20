@@ -179,7 +179,7 @@ export function renderLearn(main) {
       el("h1", {}, "The why"),
       el("p", {}, "Every rule this app runs on, with its source and an honest label for how solid the science is. Read what interests you; ignore the rest."),
     ),
-    WHY_CARDS.map((c) => {
+    ...WHY_CARDS.map((c) => {
       const [cls, label] = strengthTag[c.strength];
       return el("button", { class: "card learn-card", style: "width:100%;text-align:left", onclick: () => openWhy(c.id) },
         el("div", { class: "card-title-row" }, el("h3", {}, c.title), el("span", { class: "tag " + cls }, label)),
@@ -209,11 +209,11 @@ export function renderMore(main, navigate) {
   const s = store.get();
   main.replaceChildren(
     el("div", { class: "page-head" }, el("h1", {}, "More")),
-    el("button", { class: "card learn-card", style: "width:100%;text-align:left", onclick: () => renderCareGate(main, navigate) },
+    el("button", { class: "card learn-card", style: "width:100%;text-align:left", onclick: () => navigate("#/care") },
       el("div", { class: "card-title-row" }, el("h3", {}, "Care calendar"), icon("lock", 18)),
       el("p", { class: "one-liner" }, "Appointments, check-ups and your question list for the doctor. Private, optional PIN."),
     ),
-    el("button", { class: "card learn-card", style: "width:100%;text-align:left", onclick: () => renderSettings(main, navigate) },
+    el("button", { class: "card learn-card", style: "width:100%;text-align:left", onclick: () => navigate("#/settings") },
       el("div", { class: "card-title-row" }, el("h3", {}, "Settings and data")),
       el("p", { class: "one-liner" }, "Household, backup, and the promises this app makes."),
     ),
@@ -228,7 +228,7 @@ export function renderMore(main, navigate) {
 // ---------- care ----------
 let careUnlocked = false;
 
-function renderCareGate(main, navigate) {
+export function renderCareGate(main, navigate) {
   const s = store.get();
   if (!s.care.pinHash || careUnlocked) return renderCare(main, navigate);
   const input = el("input", { type: "password", inputmode: "numeric", maxlength: 4, placeholder: "PIN", autocomplete: "off" });
@@ -288,14 +288,14 @@ function renderCare(main, navigate) {
         return el("div", { style: "margin-top:0.6rem" }, el("div", { class: "field" }, inp), el("button", { class: "btn small secondary", onclick: add }, "Add question"));
       })(),
     ),
-    past.length
-      ? el("div", { class: "card flat" },
+    ...(past.length
+      ? [el("div", { class: "card flat" },
           el("h2", {}, "Visit notes"),
           past.map((v) => el("div", { style: "margin-bottom:0.7rem" },
             el("strong", {}, fmtDay(v.date) + " · " + v.appt),
             el("p", { class: "muted", style: "margin:0.15rem 0" }, v.notes || "(no notes)"),
-            v.next && el("p", { class: "tiny" }, "Next: " + v.next))))
-      : null,
+            v.next && el("p", { class: "tiny" }, "Next: " + v.next))))]
+      : []),
     el("div", { class: "btn-row" },
       el("button", { class: "btn ghost small", onclick: () => setupPin(main, navigate) }, icon("lock", 15), s.care.pinHash ? "Change PIN" : "Add a PIN"),
     ),
@@ -374,7 +374,7 @@ function setupPin(main, navigate) {
 }
 
 // ---------- settings ----------
-function renderSettings(main, navigate) {
+export function renderSettings(main, navigate) {
   const s = store.get();
   main.replaceChildren(
     el("div", { class: "page-head" }, el("h1", {}, "Settings and data")),

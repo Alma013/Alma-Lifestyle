@@ -171,7 +171,7 @@ export function generateWeekPlan() {
       days[d] = { recipeId: batchRecipe.id, leftover: true };
       leftoverUsed = true;
     } else {
-      days[d] = { recipeId: claim(pick((r) => r.time <= 20))?.id || null };
+      days[d] = { recipeId: claim(pick((r) => r.total <= 25))?.id || null };
     }
   }
 
@@ -198,7 +198,11 @@ export function swapDay(dayKey) {
   store.mutate((s) => {
     const current = s.week?.days[dayKey]?.recipeId;
     const used = new Set(Object.values(s.week.days).map((d) => d?.recipeId).filter(Boolean));
-    const pool = eligibleRecipes().filter((r) => !used.has(r.id));
+    let pool = eligibleRecipes().filter((r) => !used.has(r.id));
+    if (s.profile.busyNights.includes(dayKey)) {
+      const quick = pool.filter((r) => r.total <= 25);
+      if (quick.length) pool = quick; // rushed nights stay rushed-friendly when possible
+    }
     if (!pool.length) return;
     const next = pool[Math.floor(Math.random() * pool.length)];
     s.week.days[dayKey] = { recipeId: next.id };

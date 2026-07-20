@@ -1,5 +1,5 @@
-// Alma · service worker: offline app shell, cache-first with background refresh.
-const CACHE = "alma-v1";
+// Alma · service worker: offline app shell, network-first with cache fallback.
+const CACHE = "alma-v2";
 const ASSETS = [
   "./", "./index.html", "./css/styles.css", "./manifest.webmanifest",
   "./js/app.js", "./js/store.js", "./js/ui.js", "./js/data.js",
@@ -22,17 +22,14 @@ self.addEventListener("activate", (e) => {
 self.addEventListener("fetch", (e) => {
   if (e.request.method !== "GET") return;
   e.respondWith(
-    caches.match(e.request).then((cached) => {
-      const fresh = fetch(e.request)
-        .then((res) => {
-          if (res.ok && new URL(e.request.url).origin === location.origin) {
-            const copy = res.clone();
-            caches.open(CACHE).then((c) => c.put(e.request, copy));
-          }
-          return res;
-        })
-        .catch(() => cached);
-      return cached || fresh;
-    })
+    fetch(e.request)
+      .then((res) => {
+        if (res.ok && new URL(e.request.url).origin === location.origin) {
+          const copy = res.clone();
+          caches.open(CACHE).then((c) => c.put(e.request, copy));
+        }
+        return res;
+      })
+      .catch(() => caches.match(e.request))
   );
 });
