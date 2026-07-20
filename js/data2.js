@@ -55,7 +55,7 @@ export const SOUNDSCAPES = [
   { id: "ocean", name: "Ocean air", sub: "slow waves of breath", engine: "ocean" },
   { id: "night-rain", name: "Night rain", sub: "soft, steady, close", engine: "rain" },
 ];
-export const SOUND_HONESTY = "Ten minutes here is a real deposit: a nervous system that gets regular rest sleeps better, eats calmer and has more patience for the people you love. That benefit is proven; the claim that specific frequencies heal the body is not, so Alma promises you the calm and skips the mysticism.";
+
 
 // ---------- fasting ----------
 export const FAST_PROTOCOLS = [
@@ -149,6 +149,15 @@ export const METHOD_CARD = {
 
 // ---------- extra why-cards for v2 ----------
 export const WHY_CARDS_V2 = [
+  {
+    id: "sound-calm",
+    title: "Why the sanctuary works",
+    oneLiner: "Slow breath and soft sound settle the nervous system. That is the whole claim, and it is enough.",
+    body: "Slow breathing at around six breaths a minute is one of the best-studied relaxation practices there is: it steadies the heart and eases the stress response, and a settled evening is the soil better dinners and better sleep grow from. The tones are tuned low and warm because that is what most people find calming, not because a particular frequency heals the body; that claim has no good evidence behind it, so Alma simply does not make it. The calm is real, and it is yours either way.",
+    action: "Three quiet minutes tonight before dinner. Notice what your shoulders do.",
+    strength: "strong",
+    source: "Reviews of slow-paced breathing and heart-rate variability (Frontiers in Human Neuroscience, 2018); the relaxation-response literature",
+  },
   {
     id: "keto-evidence",
     title: "Keto, honestly ranked",

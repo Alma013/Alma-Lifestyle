@@ -3,7 +3,8 @@
 
 import { el, icon, toast, openModal, closeModal } from "./ui.js";
 import { store, todayISO, uid } from "./store.js";
-import { passageForToday, PROMPTS, SOUNDSCAPES, SOUND_HONESTY } from "./data2.js";
+import { passageForToday, PROMPTS, SOUNDSCAPES } from "./data2.js";
+import { openWhy } from "./views-track.js";
 import { playScape, stopScape, playingId, chime } from "./audio.js";
 import { addJournalEntry } from "./idb.js";
 
@@ -139,7 +140,7 @@ export function renderRecharge(main) {
     el("div", { class: "card" },
       el("h2", {}, "Sound"),
       el("div", { class: "sound-grid" }, tiles),
-      el("p", { class: "tiny", style: "margin-top:0.7rem" }, SOUND_HONESTY),
+      el("p", { class: "tiny", style: "margin-top:0.7rem" }, el("button", { class: "link", onclick: () => openWhy("sound-calm") }, "Why this works, honestly")),
     ),
     el("div", { class: "card prompt-card" },
       el("h2", {}, "For the inner power"),
