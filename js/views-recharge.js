@@ -44,9 +44,12 @@ function stopBreath() {
   if (breathTimer) { clearInterval(breathTimer.iv); clearTimeout(breathTimer.to); breathTimer = null; }
 }
 
-export function renderRecharge(main) {
+export function renderRecharge(main, navigate) {
   stopBreath();
   const s = store.get();
+  const hour = new Date().getHours();
+  const greet = hour < 11 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const passage = passageForToday(todayISO());
   let pattern = "calm";
   let running = false;
   let minutes = 0;
@@ -127,8 +130,10 @@ export function renderRecharge(main) {
   main.replaceChildren(
     el("div", { class: "page-head" },
       el("span", { class: "eyebrow" }, "The sanctuary"),
-      el("h1", {}, "Recharge"),
+      el("h1", {}, greet + (s.profile.name ? ", " + s.profile.name : "")),
       el("p", {}, "Ten quiet minutes that put energy back. Breath first, sound if you want it, one honest line if it comes."),
+      el("p", { class: "tiny", style: "font-family:var(--font-head);font-style:italic;font-size:0.92rem;margin-top:0.5rem" },
+        "“" + passage.text + "” · " + passage.ref),
     ),
     el("div", { class: "card" },
       el("div", { class: "card-title-row" }, el("h2", {}, "Breathe"),
@@ -157,6 +162,14 @@ export function renderRecharge(main) {
         } }, "Keep this"),
       ),
       el("p", { class: "tiny" }, "Prompts follow one idea: the hardest moments are also the clearest. What they showed you is yours to keep."),
+    ),
+    el("div", { class: "card flat" },
+      el("h3", {}, "Then, the details"),
+      el("p", { class: "muted" }, "Tonight's dinner, the week's plan and your numbers are all waiting, and none of them are urgent. Batteries first."),
+      el("div", { class: "btn-row" },
+        el("button", { class: "btn secondary small", onclick: () => navigate("#/today") }, "Today"),
+        el("button", { class: "btn ghost small", onclick: () => navigate("#/plan") }, "The plan"),
+      ),
     ),
   );
 }

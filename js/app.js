@@ -8,14 +8,17 @@ import { renderRecharge, leaveRecharge, maybeShowArrival } from "./views-recharg
 import { renderFasting, renderSignals } from "./views-signals.js";
 import { renderJournal, renderCapsule } from "./views-journal.js";
 
+// The sanctuary comes first: the app opens into Recharge, and the practical
+// day (dinner, plan, numbers) waits one tap away. Uplift before admin.
 const ROUTES = [
-  { hash: "#/", label: "Today", icon: "home", render: renderToday },
+  { hash: "#/", label: "Recharge", icon: "sun", render: renderRecharge },
+  { hash: "#/today", label: "Today", icon: "home", render: renderToday },
   { hash: "#/plan", label: "Plan", icon: "plan", render: renderPlan },
   { hash: "#/track", label: "Track", icon: "track", render: renderTrack },
-  { hash: "#/recharge", label: "Recharge", icon: "sun", render: renderRecharge },
   { hash: "#/more", label: "More", icon: "more", render: renderMore },
 ];
 const HIDDEN_ROUTES = [
+  { hash: "#/recharge", render: renderRecharge, parent: "#/" },
   { hash: "#/groceries", render: renderGroceries, parent: "#/plan" },
   { hash: "#/recipes", render: renderRecipes, parent: "#/plan" },
   { hash: "#/learn", render: renderLearn, parent: "#/more" },
