@@ -21,6 +21,9 @@ const DEFAULT_STATE = {
     dietPrefs: [],      // any of: "vegan" | "veg" | "gf" | "nosugar" (keto lives in eatingStyle)
   },
   eatingStyle: "med",   // "med" (whole-food Mediterranean) | "keto" (adult plates only)
+  ketoStrict: false,    // true: dinners under ~7 g net carbs and no added sugar (max ~20 g across the day)
+  goal: "health",       // "health" | "weight" | "muscle" | "treatment"
+  liFoods: [],          // defence-system foods the household loves (from Dr Li's table)
   exclusions: {
     always: [],         // ["pork", ...] ingredient words excluded for good
     temp: [],           // { name, until: ISO } excluded until a review date
@@ -108,6 +111,14 @@ export const store = {
 export const DAY_KEYS = ["mon", "tue", "wed", "thu", "fri", "sat", "sun"];
 export const DAY_NAMES = { mon: "Monday", tue: "Tuesday", wed: "Wednesday", thu: "Thursday", fri: "Friday", sat: "Saturday", sun: "Sunday" };
 
+export function greeting() {
+  const h = new Date().getHours();
+  if (h >= 5 && h < 11) return "Good morning";
+  if (h >= 11 && h < 17) return "Good afternoon";
+  if (h >= 17 && h < 22) return "Good evening";
+  return "Good night";
+}
+
 export function todayISO() {
   return localISO(new Date());
 }
@@ -148,6 +159,7 @@ export function eligibleRecipes() {
   const excluded = activeExclusions();
   return RECIPES.filter((r) => {
     if (state.eatingStyle === "keto" && !r.tags.includes("keto")) return false;
+    if (state.eatingStyle === "keto" && state.ketoStrict && ((r.netCarbs || 99) > 7 || !r.tags.includes("nosugar"))) return false;
     for (const pref of p.dietPrefs || []) if (!r.tags.includes(pref)) return false;
     if (!p.fishOk && r.tags.includes("fish")) return false;
     if (!p.meatOk && (r.tags.includes("chicken") || ["beef-stirfry", "sarmale-light", "burgers-home", "pork-apple-tray", "keto-mititei", "keto-pork-cabbage", "keto-lettuce-tacos", "keto-butter-chicken", "keto-cobb", "keto-zoodle-carbonara"].includes(r.id))) return false;
@@ -185,6 +197,7 @@ export function generateWeekPlan() {
       if (r.tags.includes("veg") && counts.veg < 3) s += 1;
       if (r.tags.includes("romanian") && counts.romanian === 0) s += 0.8;
       if (r.tags.includes("kidsafe") && p.kids > 0) s += 0.6;
+      if (state.liFoods.length && recipeCarriesLiFood(r)) s += 0.7;
       return [s, r];
     }).sort((a, b) => b[0] - a[0]);
     return scored[0][1];
@@ -381,6 +394,35 @@ export function mealResponseSummary() {
   return { n: Math.min(pre.length, post.length), rise: Math.round((avg(post) - avg(pre)) * 10) / 10 };
 }
 
+// which recipes carry a loved defence food (matched on ingredient names)
+export const LI_FOOD_KEYS = {
+  "Cooked tomatoes": ["tomato"], "Soy": ["tofu", "soy"], "Berries": ["berr"], "Extra-virgin olive oil": ["olive oil"],
+  "Oily fish": ["salmon", "fish", "tuna"], "Wholegrains": ["wholemeal", "barley", "brown rice", "polenta", "wholegrain"],
+  "Turmeric": ["turmeric"], "Sauerkraut": ["sauerkraut"], "Kimchi": ["kimchi"], "Yoghurt": ["yoghurt", "yogurt"],
+  "Kefir": ["kefir"], "Aged cheese": ["parmesan", "cheese", "feta"], "Sourdough": ["sourdough"],
+  "High-fibre vegetables": ["cabbage", "broccoli", "silverbeet", "spinach", "eggplant", "zucchini", "pumpkin"],
+  "Pomegranate": ["pomegranate"], "Broccoli and the cruciferous family": ["broccoli", "cabbage", "cauliflower"],
+  "Walnuts and mixed nuts": ["walnut", "nuts"], "Kiwifruit": ["kiwi"], "Carrots": ["carrot"], "Citrus": ["lemon", "lime", "orange"],
+  "Mushrooms": ["mushroom"], "Garlic, especially aged": ["garlic"], "Broccoli sprouts": ["broccoli"],
+  "Blueberries": ["blueberr"], "Chilli": ["chilli"], "Green tea": [], "Coffee": [], "Dark chocolate": [], "Black and green tea": [], "Mango": ["mango"],
+};
+export function recipeCarriesLiFood(r) {
+  const ing = r.ingredients.map((i) => i.n.toLowerCase()).join(" ");
+  return state.liFoods.some((f) => (LI_FOOD_KEYS[f] || []).some((k) => ing.includes(k)));
+}
+export function recipesForLiFoods() {
+  if (!state.liFoods.length) return [];
+  return eligibleRecipes()
+    .map((r) => {
+      const ing = r.ingredients.map((i) => i.n.toLowerCase()).join(" ");
+      const hits = state.liFoods.filter((f) => (LI_FOOD_KEYS[f] || []).some((k) => ing.includes(k)));
+      return { r, hits };
+    })
+    .filter((x) => x.hits.length)
+    .sort((a, b) => b.hits.length - a.hits.length)
+    .slice(0, 6);
+}
+
 // ---------- what the body needs (meal suggestions from your own data) ----------
 // Short term reads this week's signals and check-ins; long term reads the season.
 // Suggestions are options with reasons, never homework.
@@ -394,6 +436,27 @@ export function bodyNeeds() {
   const lastCheckin = s.checkins[0];
   const meal = mealResponseSummary();
 
+  if (s.goal === "weight") {
+    now.push({
+      title: "Fuller for less, without counting",
+      why: "Your goal is set to weight. The kind route is volume and protein: soups, eggs and fish that satisfy at a lower energy cost. No targets; the pattern does the work.",
+      recipes: pool.filter((r) => r.macros && r.macros.kcal <= 430 && r.macros.protein >= 15).slice(0, 3),
+    });
+  }
+  if (s.goal === "muscle") {
+    now.push({
+      title: "Protecting the muscle",
+      why: "Your goal includes keeping muscle. That asks for protein at most meals (the higher-protein dinners below) and two strength sessions a week (WHO guideline), because muscle answers to both.",
+      recipes: pool.filter((r) => r.macros && r.macros.protein >= 32).slice(0, 3),
+    });
+  }
+  if (s.goal === "treatment") {
+    now.push({
+      title: "Kind fuel for a treatment season",
+      why: "Gentle, batchable, freezer-friendly dinners carry hard weeks: cook once on a good day, eat well on a rough one. Your treatment team outranks every suggestion here, always.",
+      recipes: pool.filter((r) => r.tags.includes("batch")).slice(0, 3),
+    });
+  }
   if (meal && meal.n >= 3 && meal.rise > 2) {
     now.push({
       title: "A steadier evening curve",

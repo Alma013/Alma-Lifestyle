@@ -2,7 +2,7 @@
 // This is the part of the app that recharges rather than organises.
 
 import { el, icon, toast, openModal, closeModal } from "./ui.js";
-import { store, todayISO, uid } from "./store.js";
+import { store, todayISO, uid, greeting } from "./store.js";
 import { passageForToday, PROMPTS, SOUNDSCAPES, STEADY_TECHNIQUES, STEADY_NOTE } from "./data2.js";
 import { openWhy } from "./views-track.js";
 import { playScape, stopScape, playingId, chime } from "./audio.js";
@@ -53,8 +53,7 @@ function stopBreath() {
 export function renderRecharge(main, navigate) {
   stopBreath();
   const s = store.get();
-  const hour = new Date().getHours();
-  const greet = hour < 11 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const greet = greeting();
   const passage = passageForToday(todayISO());
   let pattern = "calm";
   let running = false;
@@ -184,6 +183,7 @@ export function renderRecharge(main, navigate) {
       el("div", { class: "btn-row" },
         el("button", { class: "btn secondary small", onclick: () => navigate("#/today") }, "Today"),
         el("button", { class: "btn ghost small", onclick: () => navigate("#/plan") }, "The plan"),
+        el("button", { class: "btn ghost small", onclick: () => navigate("#/signals") }, "My signals"),
       ),
     ),
   );

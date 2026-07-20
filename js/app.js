@@ -64,6 +64,7 @@ function renderNav(activeHash) {
 }
 
 window.addEventListener("hashchange", route);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) route(); }); // greetings and dates stay true when the app wakes
 store.subscribe(() => {/* views re-render themselves; hook kept for future needs */});
 route();
 maybeShowArrival(); // the daily passage, once per day, after the first paint

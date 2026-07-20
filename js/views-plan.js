@@ -3,7 +3,7 @@
 import { el, icon, openModal, closeModal, toast } from "./ui.js";
 import { RECIPES, SECTIONS, HABITS, NUDGES } from "./data.js";
 import {
-  bodyNeeds, eligibleRecipes,
+  bodyNeeds, greeting, displayGlucose, eligibleRecipes,
   store, DAY_KEYS, DAY_NAMES, todayISO, dayKeyToday, dateOfDayKey, fmtDay,
   recipeById, startNewWeek, swapDay, groceryList, toggleHabit,
 } from "./store.js";
@@ -120,8 +120,7 @@ export function renderToday(main, navigate) {
   const slot = s.week?.days[dk];
   const recipe = slot?.recipeId ? recipeById(slot.recipeId) : null;
   const dayLog = s.habitLogs[iso] || {};
-  const hour = new Date().getHours();
-  const greeting = hour < 11 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+  const greet = greeting();
 
   const pulses = HABITS.map((h) =>
     el("button", {
@@ -137,7 +136,7 @@ export function renderToday(main, navigate) {
   main.replaceChildren(
     el("div", { class: "page-head" },
       el("span", { class: "eyebrow" }, new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })),
-      el("h1", { class: "hello" }, `${greeting}${s.profile.name ? ", " + s.profile.name : ""}`),
+      el("h1", { class: "hello" }, `${greet}${s.profile.name ? ", " + s.profile.name : ""}`),
     ),
 
     el("div", { class: "card" },
@@ -164,6 +163,22 @@ export function renderToday(main, navigate) {
       el("div", { class: "pulse-grid" }, pulses),
     ),
 
+    (() => {
+      const g = s.signals.readings.find((r) => r.type === "glucose");
+      const k = s.signals.readings.find((r) => r.type === "ketone");
+      return el("div", { class: "card" },
+        el("div", { class: "card-title-row" }, el("h2", {}, "Your signals"),
+          el("button", { class: "link", onclick: () => navigate("#/signals") }, "Open")),
+        el("p", { class: "muted", style: "margin-bottom:0.5rem" },
+          g || k
+            ? "Latest: " + [g && `glucose ${displayGlucose(g.v).v} ${displayGlucose(g.v).unit}`, k && `ketones ${k.v} mmol/L`].filter(Boolean).join(" · ")
+            : "Wearing a sensor, or prick-testing? Bring the numbers in and Alma reads them kindly: glucose, ketones, GKI, labs."),
+        el("div", { class: "btn-row" },
+          el("button", { class: "btn secondary small", onclick: () => navigate("#/signals") }, "Add a reading"),
+          el("button", { class: "btn ghost small", onclick: () => navigate("#/signals") }, "Import sensor CSV"),
+        ),
+      );
+    })(),
     ...(s.activeNudge ? [renderNudgeCard(s)] : []),
 
     el("div", { class: "card" },
@@ -346,6 +361,18 @@ export function renderRecipes(main) {
   paint();
 }
 
+// foods the evidence says to keep occasional; marked, never banned
+const INGREDIENT_WARNINGS = [
+  [["bacon", "pancetta", "salami", "ham", "prosciutto", "chorizo"], "processed meat: keep occasional (WCRF)"],
+  [["sugar", "honey", "maple syrup"], "added sugar: keep rare; allulose, stevia or monk fruit instead"],
+  [["white bread", "white rice"], "refined grain: wholegrain does more"],
+];
+function ingredientWarning(name) {
+  const low = name.toLowerCase();
+  for (const [keys, label] of INGREDIENT_WARNINGS) if (keys.some((k) => low.includes(k))) return label;
+  return null;
+}
+
 export function openRecipe(r) {
   const s = store.get();
   const verdict = s.mealMemory[r.id];
@@ -371,7 +398,10 @@ export function openRecipe(r) {
     r.macros && el("p", { class: "tiny", style: "margin:-0.2rem 0 0.8rem" },
       `Per serve, approximately: ${r.macros.kcal} kcal · protein ${r.macros.protein} g · fat ${r.macros.fat} g · carbs ${r.macros.carbs} g (sugars ${r.macros.sugars} g) · fibre ${r.macros.fibre} g. Estimates for orientation, not accounting.`),
     el("h3", {}, "Ingredients"),
-    el("ul", { class: "ingredients" }, r.ingredients.map((i) => el("li", {}, `${i.n}: ${i.q}`))),
+    el("ul", { class: "ingredients" }, r.ingredients.map((i) => {
+      const warn = ingredientWarning(i.n);
+      return el("li", {}, `${i.n}: ${i.q} `, warn ? el("span", { class: "tag amber", title: warn, style: "cursor:help" }, "⚠ " + warn) : null);
+    })),
     el("h3", {}, "Method"),
     el("ol", { class: "method" }, r.method.map((m) => el("li", {}, m))),
     r.kidNote && el("div", { class: "notice", style: "margin-top:0.6rem" }, el("strong", {}, "Kids: "), r.kidNote),

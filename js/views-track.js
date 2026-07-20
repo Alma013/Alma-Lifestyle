@@ -5,7 +5,7 @@ import { WHY_CARDS, NUDGES, HABITS } from "./data.js";
 import { WHY_CARDS_V2, EXPERTS, METHOD_CARD, LI_TABLE } from "./data2.js";
 import { exportJournal, importJournal } from "./idb.js";
 import {
-  store, eligibleRecipes, DAY_KEYS, DAY_NAMES, todayISO, mondayOf, dateOfDayKey, fmtDay,
+  store, eligibleRecipes, recipesForLiFoods, DAY_KEYS, DAY_NAMES, todayISO, mondayOf, dateOfDayKey, fmtDay,
   weekHabitSummary, toggleHabit, hashPin, uid,
 } from "./store.js";
 
@@ -222,8 +222,27 @@ export function renderLearn(main) {
               el("tr", {},
                 el("td", { style: "padding:0.55rem 0.6rem;border-bottom:1px dashed var(--line-soft);font-family:var(--font-head);white-space:nowrap" }, sys),
                 el("td", { style: "padding:0.55rem 0.6rem;border-bottom:1px dashed var(--line-soft);color:var(--ink-2)" }, what),
-                el("td", { style: "padding:0.55rem 0.6rem;border-bottom:1px dashed var(--line-soft)" }, foods.join(", ")),
+                el("td", { style: "padding:0.55rem 0.6rem;border-bottom:1px dashed var(--line-soft)" },
+                  el("div", { class: "chip-row", style: "margin:0" },
+                    ...foods.map((f) => el("button", {
+                      class: "chip" + (store.get().liFoods.includes(f) ? " on" : ""),
+                      style: "font-size:0.76rem;padding:0.18rem 0.6rem",
+                      onclick: () => {
+                        store.mutate((st) => { const i = st.liFoods.indexOf(f); if (i >= 0) st.liFoods.splice(i, 1); else st.liFoods.push(f); });
+                        renderLearn(main);
+                      },
+                    }, f)))),
               ))))),
+      el("p", { class: "tiny", style: "margin-top:0.5rem" }, "Tap the foods your household loves. The planner will quietly favour recipes that carry them."),
+      (() => {
+        const matches = recipesForLiFoods();
+        return matches.length
+          ? el("div", { style: "margin-top:0.6rem" },
+              el("h3", {}, "Recipes carrying your chosen foods"),
+              ...matches.map(({ r, hits }) => el("p", { class: "muted", style: "font-size:0.88rem;margin:0.2rem 0" },
+                el("strong", {}, r.name), " · " + hits.join(", "))))
+          : null;
+      })(),
       el("div", { class: "source-line" }, "Source: " + LI_TABLE.source + "."),
     ),
     el("h2", { style: "margin:1.2rem 0 0.6rem" }, "The evidence cards"),
@@ -451,6 +470,21 @@ export function renderSettings(main, navigate) {
     el("p", { class: "tiny" }, s.eatingStyle === "keto"
       ? "Keto mode is on: the planner uses the low-carb set and shows net carbs. The Mediterranean pattern remains one tap away."
       : "The default, and the best-evidenced pattern in nutrition. Keto is available as a deliberate tool."),
+    ...(s.eatingStyle === "keto" ? [el("div", { class: "chip-row", style: "margin-top:0.4rem" },
+      el("button", {
+        class: "chip" + (s.ketoStrict ? " on" : ""),
+        onclick: () => { store.update({ ketoStrict: !s.ketoStrict }); renderSettings(main, navigate); toast(s.ketoStrict ? "Standard keto" : "Strict keto: the planner now keeps dinners under 7 g net carbs, no added sugar."); },
+      }, "Strict: max 20 g net carbs a day, no sugar")),
+      el("p", { class: "tiny" }, s.ketoStrict ? "Dinners stay under about 7 g net carbs so the whole day can stay under 20. Tell your care team; this depth of restriction deserves supervision." : "")] : []),
+    el("div", { class: "divider" }),
+    el("label", { style: "display:block;font-size:0.85rem;font-weight:600;color:var(--ink-2);margin-bottom:0.3rem" }, "What is the season for?"),
+    el("div", { class: "chip-row" },
+      ...[["health", "Health and energy"], ["weight", "Losing weight kindly"], ["muscle", "Keeping muscle"], ["treatment", "Through treatment or a condition"]].map(([id, label]) =>
+        el("button", {
+          class: "chip" + ((s.goal || "health") === id ? " on" : ""),
+          onclick: () => { store.update({ goal: id }); renderSettings(main, navigate); toast("The plan will lean that way, gently."); },
+        }, label))),
+    el("p", { class: "tiny" }, "The goal tilts suggestions; it never becomes targets, grades or punishments. Weight is still never tracked here."),
     el("div", { class: "divider" }),
     el("label", { style: "display:block;font-size:0.85rem;font-weight:600;color:var(--ink-2);margin-bottom:0.3rem" }, "Also keep every plan"),
     el("div", { class: "chip-row" },

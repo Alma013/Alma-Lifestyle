@@ -85,10 +85,47 @@ function noiseEngine(kind) {
   return () => { try { src.stop(); lfo?.stop(); } catch {} bus.disconnect(); };
 }
 
+// Gentle keys: slow pentatonic notes over a whisper of pad. Piano-adjacent,
+// almost no background wash, tuned for company rather than immersion.
+function keysEngine() {
+  const NOTES = [220, 246.94, 277.18, 329.63, 369.99, 440, 554.37];
+  const padStop = (() => {
+    const o = ctx.createOscillator(); const g = ctx.createGain();
+    o.frequency.value = 110; g.gain.value = 0.05;
+    o.connect(g); g.connect(master); o.start();
+    return () => { try { o.stop(); } catch {} };
+  })();
+  let alive = true;
+  const timers = [];
+  const pluck = (freq, vel) => {
+    if (!alive) return;
+    const t = ctx.currentTime;
+    const g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vel, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + 2.8);
+    g.connect(master);
+    [[1, 1], [2, 0.4], [3, 0.12]].forEach(([h, hv]) => {
+      const o = ctx.createOscillator(); const hg = ctx.createGain();
+      o.frequency.value = freq * h; hg.gain.value = hv;
+      o.connect(hg); hg.connect(g); o.start(t); o.stop(t + 3);
+    });
+  };
+  const schedule = () => {
+    if (!alive) return;
+    const n = NOTES[Math.floor(Math.random() * NOTES.length)];
+    pluck(n, 0.16 + Math.random() * 0.08);
+    if (Math.random() < 0.3) timers.push(setTimeout(() => pluck(n * 1.5, 0.1), 420));
+    timers.push(setTimeout(schedule, 1700 + Math.random() * 2100));
+  };
+  schedule();
+  return () => { alive = false; timers.forEach(clearTimeout); padStop(); };
+}
+
 export function playScape(scape) {
   ensureCtx();
   stopScape(0.15);
-  const stop = scape.engine === "pad" ? padEngine(scape.base, scape.bright) : noiseEngine(scape.engine);
+  const stop = scape.engine === "pad" ? padEngine(scape.base, scape.bright) : scape.engine === "keys" ? keysEngine() : noiseEngine(scape.engine);
   current = { id: scape.id, stop };
   fadeMaster(0.8, 2.5);
   return scape.id;

@@ -64,6 +64,7 @@ export const SOUNDSCAPES = [
   { id: "glow-528", name: "Golden tone", sub: "528 Hz slow swell", engine: "pad", base: 132 },
   { id: "morning-light", name: "Morning light", sub: "a brighter lift, majors and air", engine: "pad", base: 165, bright: true },
   { id: "open-sky", name: "Open sky", sub: "wide, hopeful, unhurried", engine: "pad", base: 220, bright: true },
+  { id: "gentle-keys", name: "Gentle keys", sub: "slow piano notes, almost alone", engine: "keys" },
   { id: "ocean", name: "Ocean air", sub: "slow waves of breath", engine: "ocean" },
   { id: "night-rain", name: "Night rain", sub: "soft, steady, close", engine: "rain" },
   { id: "stream", name: "Forest stream", sub: "water over stones", engine: "stream" },
