@@ -2,10 +2,10 @@
 
 import { el, icon, openModal, closeModal, toast, sparkline } from "./ui.js";
 import { WHY_CARDS, NUDGES, HABITS } from "./data.js";
-import { WHY_CARDS_V2, EXPERTS, METHOD_CARD } from "./data2.js";
+import { WHY_CARDS_V2, EXPERTS, METHOD_CARD, LI_TABLE } from "./data2.js";
 import { exportJournal, importJournal } from "./idb.js";
 import {
-  store, DAY_KEYS, DAY_NAMES, todayISO, mondayOf, dateOfDayKey, fmtDay,
+  store, eligibleRecipes, DAY_KEYS, DAY_NAMES, todayISO, mondayOf, dateOfDayKey, fmtDay,
   weekHabitSummary, toggleHabit, hashPin, uid,
 } from "./store.js";
 
@@ -209,6 +209,23 @@ export function renderLearn(main) {
         ),
       );
     }),
+    el("div", { class: "card" },
+      el("h2", {}, LI_TABLE.title),
+      el("p", { class: "muted", style: "font-size:0.9rem" }, LI_TABLE.intro),
+      el("div", { style: "overflow-x:auto" },
+        el("table", { style: "width:100%;border-collapse:collapse;font-size:0.86rem;min-width:34rem" },
+          el("thead", {}, el("tr", {},
+            ...["Defence system", "What it does", "Foods that feed it"].map((h) =>
+              el("th", { style: "text-align:left;padding:0.45rem 0.6rem;border-bottom:1px solid var(--line);color:var(--ink-3);font-weight:600;font-size:0.74rem;letter-spacing:0.06em;text-transform:uppercase" }, h)))),
+          el("tbody", {},
+            ...LI_TABLE.systems.map(([sys, what, foods]) =>
+              el("tr", {},
+                el("td", { style: "padding:0.55rem 0.6rem;border-bottom:1px dashed var(--line-soft);font-family:var(--font-head);white-space:nowrap" }, sys),
+                el("td", { style: "padding:0.55rem 0.6rem;border-bottom:1px dashed var(--line-soft);color:var(--ink-2)" }, what),
+                el("td", { style: "padding:0.55rem 0.6rem;border-bottom:1px dashed var(--line-soft)" }, foods.join(", ")),
+              ))))),
+      el("div", { class: "source-line" }, "Source: " + LI_TABLE.source + "."),
+    ),
     el("h2", { style: "margin:1.2rem 0 0.6rem" }, "The evidence cards"),
     ...allCards.map((c) => {
       const [cls, label] = STRENGTH_TAG[c.strength];
@@ -434,6 +451,25 @@ export function renderSettings(main, navigate) {
     el("p", { class: "tiny" }, s.eatingStyle === "keto"
       ? "Keto mode is on: the planner uses the low-carb set and shows net carbs. The Mediterranean pattern remains one tap away."
       : "The default, and the best-evidenced pattern in nutrition. Keto is available as a deliberate tool."),
+    el("div", { class: "divider" }),
+    el("label", { style: "display:block;font-size:0.85rem;font-weight:600;color:var(--ink-2);margin-bottom:0.3rem" }, "Also keep every plan"),
+    el("div", { class: "chip-row" },
+      ...[["vegan", "Vegan"], ["veg", "Vegetarian"], ["gf", "Gluten free"], ["nosugar", "No added sugar"]].map(([id, label]) =>
+        el("button", {
+          class: "chip" + ((s.profile.dietPrefs || []).includes(id) ? " on" : ""),
+          onclick: () => {
+            store.mutate((st) => {
+              const p = st.profile.dietPrefs || (st.profile.dietPrefs = []);
+              const i = p.indexOf(id);
+              if (i >= 0) p.splice(i, 1); else p.push(id);
+            });
+            renderSettings(main, navigate);
+            const n = eligibleRecipes().length;
+            toast(n >= 7 ? `${n} recipes match. The next plan will respect it.` : `Only ${n} recipes match that combination; a full week needs seven.`);
+          },
+        }, label))),
+    el("p", { class: "tiny" }, "When sweetness is needed anywhere, Alma reaches for pure allulose, stevia or monk fruit. ",
+      el("button", { class: "link", onclick: () => openWhy("sweetness") }, "The honest why")),
   );
 
   // ---- exclusions ----
@@ -533,7 +569,7 @@ export function renderSettings(main, navigate) {
       el("ul", { class: "muted", style: "padding-left:1.1rem" },
         el("li", {}, "Named sources on every suggestion, so you never have to take Alma\u2019s word for anything."),
         el("li", {}, "No diagnosis and no symptom checking, so this app can never frighten you at midnight. It sends you to the right person with better questions instead."),
-        el("li", {}, "No weight, calories, punishments or streaks: a companion you can keep for years without it ever turning on you."),
+        el("li", {}, "Nutrition facts when you want them, never as a verdict: no calorie targets, no weight, no punishments, no streaks. A companion you can keep for years without it ever turning on you."),
         el("li", {}, "Your data never leaves this device because there is no server to leave to. Privacy here is physics, not a policy that can quietly change."),
       ),
     ),

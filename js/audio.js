@@ -25,7 +25,7 @@ function fadeMaster(to, seconds) {
 
 // A slow warm pad around a base frequency: detuned oscillator pair plus a soft
 // shimmer an octave up, breathing gently via an LFO on the filter.
-function padEngine(baseHz) {
+function padEngine(baseHz, bright) {
   const nodes = [];
   const bus = ctx.createGain(); bus.gain.value = 0.22;
   const filter = ctx.createBiquadFilter();
@@ -43,9 +43,14 @@ function padEngine(baseHz) {
   mk(baseHz * 1.005, 0.4);           // gentle beating
   mk(baseHz * 2, 0.12, "triangle");  // shimmer
   mk(baseHz / 2, 0.25);              // floor
+  if (bright) {                       // the uplifting voices: a major chord opening upward
+    mk(baseHz * 1.25, 0.18);          // major third
+    mk(baseHz * 1.5, 0.15);           // perfect fifth
+    mk(baseHz * 3, 0.05, "triangle"); // high air
+  }
 
   const lfo = ctx.createOscillator(); const lfoGain = ctx.createGain();
-  lfo.frequency.value = 0.07; lfoGain.gain.value = baseHz * 2;
+  lfo.frequency.value = bright ? 0.12 : 0.07; lfoGain.gain.value = baseHz * 2;
   lfo.connect(lfoGain); lfoGain.connect(filter.frequency); lfo.start();
   nodes.push(lfo);
 
@@ -66,15 +71,15 @@ function noiseEngine(kind) {
   const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
   const filter = ctx.createBiquadFilter();
   filter.type = "lowpass";
-  filter.frequency.value = kind === "rain" ? 3200 : 900;
-  const bus = ctx.createGain(); bus.gain.value = kind === "rain" ? 0.5 : 0.7;
+  filter.frequency.value = kind === "rain" ? 3200 : kind === "stream" ? 1600 : 900;
+  const bus = ctx.createGain(); bus.gain.value = kind === "rain" ? 0.5 : kind === "stream" ? 0.55 : 0.7;
   src.connect(filter); filter.connect(bus); bus.connect(master);
   src.start();
 
   let lfo = null, lfoGain = null;
-  if (kind === "ocean") { // slow wave swell
+  if (kind === "ocean" || kind === "stream") { // slow swell; the stream burbles faster
     lfo = ctx.createOscillator(); lfoGain = ctx.createGain();
-    lfo.frequency.value = 0.08; lfoGain.gain.value = 0.32;
+    lfo.frequency.value = kind === "stream" ? 0.5 : 0.08; lfoGain.gain.value = kind === "stream" ? 0.12 : 0.32;
     lfo.connect(lfoGain); lfoGain.connect(bus.gain); lfo.start();
   }
   return () => { try { src.stop(); lfo?.stop(); } catch {} bus.disconnect(); };
@@ -83,7 +88,7 @@ function noiseEngine(kind) {
 export function playScape(scape) {
   ensureCtx();
   stopScape(0.15);
-  const stop = scape.engine === "pad" ? padEngine(scape.base) : noiseEngine(scape.engine);
+  const stop = scape.engine === "pad" ? padEngine(scape.base, scape.bright) : noiseEngine(scape.engine);
   current = { id: scape.id, stop };
   fadeMaster(0.8, 2.5);
   return scape.id;

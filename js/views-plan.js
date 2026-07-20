@@ -3,6 +3,7 @@
 import { el, icon, openModal, closeModal, toast } from "./ui.js";
 import { RECIPES, SECTIONS, HABITS, NUDGES } from "./data.js";
 import {
+  bodyNeeds, eligibleRecipes,
   store, DAY_KEYS, DAY_NAMES, todayISO, dayKeyToday, dateOfDayKey, fmtDay,
   recipeById, startNewWeek, swapDay, groceryList, toggleHabit,
 } from "./store.js";
@@ -209,12 +210,38 @@ export function renderPlan(main, navigate) {
     );
   });
 
+  const pool = eligibleRecipes();
+  const poolWarning = pool.length < 7
+    ? el("div", { class: "notice warm" },
+        `Your current combination of way of eating, dietary keeps and exclusions leaves ${pool.length} recipe${pool.length === 1 ? "" : "s"}, and a full week needs at least seven. Loosen one filter in `,
+        el("button", { class: "link", onclick: () => navigate("#/settings") }, "Settings"),
+        " and plan a new week.")
+    : null;
+  const needs = bodyNeeds();
+  const planTonight = (rid) => {
+    store.mutate((st) => { st.week.days[dk] = { recipeId: rid }; st.week.checked = {}; });
+    renderPlan(main, navigate);
+  };
+  const needsCard = el("div", { class: "card" },
+    el("div", { class: "card-title-row" }, el("h2", {}, "Start from what your body needs")),
+    ...needs.now.map((n) => el("div", { style: "margin-bottom:0.8rem" },
+      el("h3", {}, n.title),
+      el("p", { class: "muted", style: "font-size:0.88rem;margin-bottom:0.4rem" }, n.why),
+      el("div", { class: "chip-row", style: "margin:0" },
+        ...n.recipes.map((r) => el("button", { class: "chip", title: "Plan this for tonight", onclick: () => planTonight(r.id) }, r.name + " →"))),
+    )),
+    el("div", { class: "divider" }),
+    el("p", { class: "tiny" }, "The long game: " + needs.season.join(" ")),
+  );
+
   main.replaceChildren(
     el("div", { class: "page-head" },
       el("span", { class: "eyebrow" }, "Week of " + fmtDay(s.week.start)),
       el("h1", {}, "The plan"),
       el("p", {}, "Whole food, family sized, built around your rushed nights. Swap anything."),
     ),
+    ...(poolWarning ? [poolWarning] : []),
+    needsCard,
     el("div", { class: "week-list" }, rows),
     el("div", { class: "btn-row", style: "margin-top:1rem" },
       el("button", { class: "btn", onclick: () => navigate("#/groceries") }, "Grocery list"),
@@ -292,7 +319,7 @@ export function renderGroceries(main, navigate) {
 export function renderRecipes(main) {
   const s = store.get();
   let activeTag = null;
-  const TAGS = [["quick", "Under 25 min"], ["kidsafe", "Kid friendly"], ["veg", "Vegetarian"], ["fish", "Fish"], ["legume", "Legumes"], ["batch", "Batch and freeze"], ["romanian", "Romanian"]];
+  const TAGS = [["quick", "Under 25 min"], ["kidsafe", "Kid friendly"], ["veg", "Vegetarian"], ["vegan", "Vegan"], ["gf", "Gluten free"], ["keto", "Ketogenic"], ["nosugar", "No added sugar"], ["fish", "Fish"], ["legume", "Legumes"], ["batch", "Batch and freeze"], ["romanian", "Romanian"]];
 
   function paint() {
     const list = RECIPES.filter((r) => !activeTag || r.tags.includes(activeTag));
@@ -337,7 +364,12 @@ export function openRecipe(r) {
       el("span", { class: "tag" }, `serves ${r.serves}`),
       r.tags.includes("batch") && el("span", { class: "tag green" }, "doubles well"),
       r.netCarbs && el("span", { class: "tag amber" }, `~${r.netCarbs} g net carbs`),
+      r.tags.includes("vegan") ? el("span", { class: "tag green" }, "vegan") : (r.tags.includes("veg") && el("span", { class: "tag green" }, "vegetarian")),
+      r.tags.includes("gf") && el("span", { class: "tag" }, "gluten free"),
+      r.tags.includes("nosugar") && el("span", { class: "tag" }, "no added sugar"),
     ),
+    r.macros && el("p", { class: "tiny", style: "margin:-0.2rem 0 0.8rem" },
+      `Per serve, approximately: ${r.macros.kcal} kcal · protein ${r.macros.protein} g · fat ${r.macros.fat} g · carbs ${r.macros.carbs} g (sugars ${r.macros.sugars} g) · fibre ${r.macros.fibre} g. Estimates for orientation, not accounting.`),
     el("h3", {}, "Ingredients"),
     el("ul", { class: "ingredients" }, r.ingredients.map((i) => el("li", {}, `${i.n}: ${i.q}`))),
     el("h3", {}, "Method"),

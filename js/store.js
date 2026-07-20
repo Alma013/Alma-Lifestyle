@@ -18,6 +18,7 @@ const DEFAULT_STATE = {
     busyNights: [],     // ["tue","thu"] nights needing quick or leftover dinners
     fishOk: true,
     meatOk: true,
+    dietPrefs: [],      // any of: "vegan" | "veg" | "gf" | "nosugar" (keto lives in eatingStyle)
   },
   eatingStyle: "med",   // "med" (whole-food Mediterranean) | "keto" (adult plates only)
   exclusions: {
@@ -147,6 +148,7 @@ export function eligibleRecipes() {
   const excluded = activeExclusions();
   return RECIPES.filter((r) => {
     if (state.eatingStyle === "keto" && !r.tags.includes("keto")) return false;
+    for (const pref of p.dietPrefs || []) if (!r.tags.includes(pref)) return false;
     if (!p.fishOk && r.tags.includes("fish")) return false;
     if (!p.meatOk && (r.tags.includes("chicken") || ["beef-stirfry", "sarmale-light", "burgers-home", "pork-apple-tray", "keto-mititei", "keto-pork-cabbage", "keto-lettuce-tacos", "keto-butter-chicken", "keto-cobb", "keto-zoodle-carbonara"].includes(r.id))) return false;
     if (state.mealMemory[r.id] === "vetoed") return false;
@@ -377,4 +379,77 @@ export function mealResponseSummary() {
   if (!pre.length || !post.length) return null;
   const avg = (a) => a.reduce((x, y) => x + y.v, 0) / a.length;
   return { n: Math.min(pre.length, post.length), rise: Math.round((avg(post) - avg(pre)) * 10) / 10 };
+}
+
+// ---------- what the body needs (meal suggestions from your own data) ----------
+// Short term reads this week's signals and check-ins; long term reads the season.
+// Suggestions are options with reasons, never homework.
+export function bodyNeeds() {
+  const s = state;
+  const pool = eligibleRecipes();
+  const byTag = (t) => pool.filter((r) => r.tags.includes(t));
+  const now = [];
+  const season = [];
+
+  const lastCheckin = s.checkins[0];
+  const meal = mealResponseSummary();
+
+  if (meal && meal.n >= 3 && meal.rise > 2) {
+    now.push({
+      title: "A steadier evening curve",
+      why: `Your after-meal readings run about ${Math.round(meal.rise * 10) / 10} mmol/L above before-meal ones, so tonight suits a lower-carb, vegetables-first plate.`,
+      recipes: pool.filter((r) => (r.netCarbs && r.netCarbs <= 12) || r.tags.includes("keto")).slice(0, 3),
+    });
+  }
+  if (lastCheckin && lastCheckin.energy <= 2) {
+    now.push({
+      title: "Iron and protein for a low-energy week",
+      why: "You rated energy " + lastCheckin.energy + "/5 at the last check-in. Red meat, legumes and dark greens carry the iron; protein steadies the afternoons.",
+      recipes: pool.filter((r) => ["beef-stirfry", "keto-mititei", "burgers-home", "lentil-bolognese", "keto-cobb", "sheetpan-salmon"].includes(r.id)).slice(0, 3),
+    });
+  }
+  if (lastCheckin && lastCheckin.sleep <= 2) {
+    now.push({
+      title: "Lighter, earlier, kinder to sleep",
+      why: "Sleep rated " + lastCheckin.sleep + "/5. A lighter dinner eaten earlier is one of the most reliable sleep levers there is.",
+      recipes: pool.filter((r) => ["chicken-soup", "minestrone", "veg-frittata", "keto-mushroom-soup", "fish-parcels", "ciorba-legume"].includes(r.id)).slice(0, 3),
+    });
+  }
+  // week coverage: what the pattern still needs
+  const weekIds = s.week ? Object.values(s.week.days).map((d) => d?.recipeId).filter(Boolean) : [];
+  const weekTags = weekIds.map((id) => recipeById(id)).filter(Boolean).flatMap((r) => r.tags);
+  const fishCount = weekTags.filter((t) => t === "fish").length;
+  const legumeCount = weekTags.filter((t) => t === "legume").length;
+  if (s.week && fishCount < 2 && state.profile.fishOk) {
+    now.push({
+      title: "The week is short on fish",
+      why: `${fishCount || "No"} fish dinner${fishCount === 1 ? "" : "s"} planned so far; the omega-3 rhythm asks for two.`,
+      recipes: byTag("fish").slice(0, 3),
+    });
+  }
+  if (s.week && legumeCount < 2 && state.eatingStyle !== "keto") {
+    now.push({
+      title: "Room for legumes",
+      why: "Twice a week is the rhythm the longevity research keeps rewarding, and the week has space.",
+      recipes: byTag("legume").slice(0, 3),
+    });
+  }
+  if (!now.length) {
+    now.push({
+      title: "The pattern is holding",
+      why: "Nothing is missing this week. Cook what brings joy; enjoyment is what makes patterns last.",
+      recipes: pool.filter((r) => s.mealMemory[r.id] === "loved").slice(0, 3),
+    });
+  }
+
+  // season: the long game, from the last month of check-ins
+  const recent = s.checkins.slice(0, 4);
+  const avg = (k) => recent.length ? recent.reduce((a, c) => a + (c[k] || 3), 0) / recent.length : null;
+  if (recent.length >= 2) {
+    const e = avg("energy"), sl = avg("sleep");
+    if (e !== null && e < 3) season.push("Energy has run low across the month. Worth protecting: the after-dinner walk, iron-rich dinners weekly, and mentioning the pattern at your next GP visit.");
+    if (sl !== null && sl < 3) season.push("Sleep has been the weak signal lately. The long levers: a consistent wind-down, the 4-7-8 breath, dinner on the earlier side, coffee before noon only.");
+  }
+  season.push("The season's quiet targets: fish twice a week, legumes twice, thirty different plants across the week, and the walk that survives real life.");
+  return { now: now.slice(0, 3), season };
 }

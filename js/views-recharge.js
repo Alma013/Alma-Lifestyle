@@ -3,7 +3,7 @@
 
 import { el, icon, toast, openModal, closeModal } from "./ui.js";
 import { store, todayISO, uid } from "./store.js";
-import { passageForToday, PROMPTS, SOUNDSCAPES } from "./data2.js";
+import { passageForToday, PROMPTS, SOUNDSCAPES, STEADY_TECHNIQUES, STEADY_NOTE } from "./data2.js";
 import { openWhy } from "./views-track.js";
 import { playScape, stopScape, playingId, chime } from "./audio.js";
 import { addJournalEntry } from "./idb.js";
@@ -34,9 +34,15 @@ export function maybeShowArrival() {
 
 // ---------- breathing ----------
 const BREATH_PATTERNS = {
-  calm: { label: "Slow calm", phases: [["Breathe in", 4], ["Hold", 2], ["Breathe out", 6]], note: "A longer exhale nudges the nervous system toward rest. Slow breathing at around six breaths a minute is one of the better-studied relaxation practices." },
-  box: { label: "Box", phases: [["Breathe in", 4], ["Hold", 4], ["Breathe out", 4], ["Hold", 4]], note: "Even sides, like tracing a square. Used everywhere from clinics to cockpits for steadying attention." },
-  "478": { label: "4-7-8", phases: [["Breathe in", 4], ["Hold", 7], ["Breathe out", 8]], note: "A stronger pattern for winding down toward sleep. If holding feels strained, the gentle pattern is the better choice tonight." },
+  calm: { label: "Slow calm", phases: [["Breathe in", 4], ["Hold", 2], ["Breathe out", 6]],
+    how: "In through the nose, out through the nose or softly parted lips. Jaw loose, shoulders down.",
+    note: "A longer exhale nudges the nervous system toward rest. Slow breathing at around six breaths a minute is one of the better-studied relaxation practices." },
+  box: { label: "Box", phases: [["Breathe in", 4], ["Hold", 4], ["Breathe out", 4], ["Hold", 4]],
+    how: "In and out through the nose, quietly. The mouth stays closed, the tongue rests on the roof of the mouth.",
+    note: "Even sides, like tracing a square. Used everywhere from clinics to cockpits for steadying attention." },
+  "478": { label: "4-7-8", phases: [["Breathe in", 4], ["Hold", 7], ["Breathe out", 8]],
+    how: "In through the nose for four, hold for seven, then out through the open mouth with a soft whoosh for eight, lips as if cooling soup.",
+    note: "A stronger pattern for winding down toward sleep. If holding feels strained, the gentle pattern is the better choice tonight." },
 };
 
 let breathTimer = null;
@@ -56,6 +62,7 @@ export function renderRecharge(main, navigate) {
 
   const word = el("div", { class: "breath-word" }, "Ready");
   const count = el("div", { class: "breath-count" }, "Three minutes is a real reset. One is still real.");
+  const howLine = el("p", { class: "tiny center", style: "max-width:26rem;margin:0.5rem auto 0" }, BREATH_PATTERNS[pattern].how);
   const ring = el("div", { class: "breath-ring" }, word);
 
   function runPhase(i, startedAt) {
@@ -98,6 +105,7 @@ export function renderRecharge(main, navigate) {
         e.target.closest(".chip-row").querySelectorAll(".chip").forEach((c) => c.classList.remove("on"));
         e.target.classList.add("on");
         count.textContent = p.note;
+        howLine.textContent = p.how;
       },
     }, p.label));
 
@@ -139,13 +147,20 @@ export function renderRecharge(main, navigate) {
       el("div", { class: "card-title-row" }, el("h2", {}, "Breathe"),
         s.sanctuaryMinutes > 0 ? el("span", { class: "tag green" }, `${s.sanctuaryMinutes} quiet minutes so far`) : null),
       el("div", { class: "chip-row" }, patternChips),
-      el("div", { class: "breath-stage" }, ring, count),
+      el("div", { class: "breath-stage" }, ring, count, howLine),
       el("div", { class: "btn-row", style: "justify-content:center" }, startBtn),
     ),
     el("div", { class: "card" },
       el("h2", {}, "Sound"),
       el("div", { class: "sound-grid" }, tiles),
       el("p", { class: "tiny", style: "margin-top:0.7rem" }, el("button", { class: "link", onclick: () => openWhy("sound-calm") }, "Why this works, honestly")),
+    ),
+    el("div", { class: "card" },
+      el("h2", {}, "For the hard moments"),
+      el("p", { class: "muted" }, "Pain flares and big feelings have body-first brakes. Seven tools, each honest about its evidence, none longer than a minute to learn."),
+      el("div", { class: "chip-row" },
+        ...STEADY_TECHNIQUES.map((t) => el("button", { class: "chip", onclick: () => openSteady(t) }, t.name))),
+      el("p", { class: "tiny" }, STEADY_NOTE),
     ),
     el("div", { class: "card prompt-card" },
       el("h2", {}, "For the inner power"),
@@ -171,6 +186,19 @@ export function renderRecharge(main, navigate) {
         el("button", { class: "btn ghost small", onclick: () => navigate("#/plan") }, "The plan"),
       ),
     ),
+  );
+}
+
+const STRENGTH_LABEL = { strong: ["evidence-strong", "strong evidence"], emerging: ["evidence-emerging", "emerging evidence"], thin: ["evidence-thin", "practice wisdom"] };
+function openSteady(t) {
+  const [cls, label] = STRENGTH_LABEL[t.strength];
+  openModal(
+    el("h2", {}, t.name),
+    el("span", { class: "tag " + cls }, label),
+    el("p", { class: "tiny", style: "margin-top:0.4rem" }, "For: " + t.when),
+    el("ol", { class: "method", style: "margin-top:0.6rem" }, t.steps.map((st) => el("li", {}, st))),
+    el("p", { class: "muted", style: "margin-top:0.6rem" }, t.why),
+    el("div", { class: "source-line" }, "Source: " + t.source + "."),
   );
 }
 
