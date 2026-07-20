@@ -2,6 +2,8 @@
 
 import { el, icon, openModal, closeModal, toast, sparkline } from "./ui.js";
 import { WHY_CARDS, NUDGES, HABITS } from "./data.js";
+import { WHY_CARDS_V2, EXPERTS, METHOD_CARD } from "./data2.js";
+import { exportJournal, importJournal } from "./idb.js";
 import {
   store, DAY_KEYS, DAY_NAMES, todayISO, mondayOf, dateOfDayKey, fmtDay,
   weekHabitSummary, toggleHabit, hashPin, uid,
@@ -171,16 +173,45 @@ function runCheckin(main, navigate) {
 }
 
 // ---------- learn ----------
+const STRENGTH_TAG = {
+  strong: ["evidence-strong", "strong evidence"],
+  emerging: ["evidence-emerging", "emerging evidence"],
+  thin: ["evidence-thin", "thin evidence"],
+  contested: ["evidence-contested", "research-stage, contested"],
+};
+
 export function renderLearn(main) {
-  const strengthTag = { strong: ["evidence-strong", "strong evidence"], emerging: ["evidence-emerging", "emerging evidence"], thin: ["evidence-thin", "thin evidence"] };
+  const allCards = [...WHY_CARDS, ...WHY_CARDS_V2];
   main.replaceChildren(
     el("div", { class: "page-head" },
       el("span", { class: "eyebrow" }, "Know first, then choose"),
       el("h1", {}, "The why"),
       el("p", {}, "Every rule this app runs on, with its source and an honest label for how solid the science is. Read what interests you; ignore the rest."),
     ),
-    ...WHY_CARDS.map((c) => {
-      const [cls, label] = strengthTag[c.strength];
+    el("div", { class: "card" },
+      el("h2", {}, METHOD_CARD.title),
+      ...METHOD_CARD.steps.map(([t, b], i) => el("p", { class: "muted", style: "font-size:0.9rem" },
+        el("strong", {}, (i + 1) + ". " + t + ". "), b)),
+    ),
+    el("h2", { style: "margin:1.2rem 0 0.6rem" }, "The voices behind the choices"),
+    el("p", { class: "muted", style: "margin-bottom:0.8rem" }, "Five people whose ideas shape this app, each with what to take and what to hold lightly. Trust is built by labelling both."),
+    ...EXPERTS.map((x) => {
+      const [cls, label] = STRENGTH_TAG[x.strength];
+      return el("div", { class: "card expert-card" },
+        el("div", { class: "expert-mono" }, x.mono),
+        el("div", {},
+          el("div", { class: "card-title-row" }, el("h3", {}, x.name), el("span", { class: "tag " + cls }, label)),
+          el("p", { class: "tiny", style: "margin:0 0 0.4rem" }, x.field),
+          el("p", { class: "muted", style: "font-size:0.9rem" }, x.idea),
+          el("p", { class: "muted", style: "font-size:0.9rem" }, el("strong", {}, "Take: "), x.take),
+          el("p", { class: "muted", style: "font-size:0.9rem" }, el("strong", {}, "Hold lightly: "), x.hold),
+          el("div", { class: "source-line" }, "Source: " + x.source + "."),
+        ),
+      );
+    }),
+    el("h2", { style: "margin:1.2rem 0 0.6rem" }, "The evidence cards"),
+    ...allCards.map((c) => {
+      const [cls, label] = STRENGTH_TAG[c.strength];
       return el("button", { class: "card learn-card", style: "width:100%;text-align:left", onclick: () => openWhy(c.id) },
         el("div", { class: "card-title-row" }, el("h3", {}, c.title), el("span", { class: "tag " + cls }, label)),
         el("p", { class: "one-liner" }, c.oneLiner),
@@ -191,10 +222,9 @@ export function renderLearn(main) {
 }
 
 export function openWhy(id) {
-  const c = WHY_CARDS.find((x) => x.id === id);
+  const c = WHY_CARDS.find((x) => x.id === id) || WHY_CARDS_V2.find((x) => x.id === id);
   if (!c) return;
-  const strengthTag = { strong: ["evidence-strong", "strong evidence"], emerging: ["evidence-emerging", "emerging evidence"], thin: ["evidence-thin", "thin evidence"] };
-  const [cls, label] = strengthTag[c.strength];
+  const [cls, label] = STRENGTH_TAG[c.strength];
   openModal(
     el("h2", {}, c.title),
     el("span", { class: "tag " + cls }, label),
@@ -207,16 +237,20 @@ export function openWhy(id) {
 // ---------- more: care + settings ----------
 export function renderMore(main, navigate) {
   const s = store.get();
+  const item = (hash, title, sub, ic) =>
+    el("button", { class: "card learn-card", style: "width:100%;text-align:left", onclick: () => navigate(hash) },
+      el("div", { class: "card-title-row" }, el("h3", {}, title), ic ? icon(ic, 18) : null),
+      el("p", { class: "one-liner" }, sub),
+    );
   main.replaceChildren(
     el("div", { class: "page-head" }, el("h1", {}, "More")),
-    el("button", { class: "card learn-card", style: "width:100%;text-align:left", onclick: () => navigate("#/care") },
-      el("div", { class: "card-title-row" }, el("h3", {}, "Care calendar"), icon("lock", 18)),
-      el("p", { class: "one-liner" }, "Appointments, check-ups and your question list for the doctor. Private, optional PIN."),
-    ),
-    el("button", { class: "card learn-card", style: "width:100%;text-align:left", onclick: () => navigate("#/settings") },
-      el("div", { class: "card-title-row" }, el("h3", {}, "Settings and data")),
-      el("p", { class: "one-liner" }, "Household, backup, and the promises this app makes."),
-    ),
+    item("#/learn", "The why", "Every rule with its source: the method, the five voices, the evidence cards.", "learn"),
+    item("#/journal", "Journal", "Photos, voice notes and words, kept for the future you.", "camera"),
+    item("#/capsule", "The capsule", "Letters sealed for later: your print, for you and yours.", "mail"),
+    item("#/fasting", "Fasting", "Gentle eating windows, honest safety, a timer that never nags.", "hourglass"),
+    item("#/signals", "Signals", "Glucose, ketones and labs, charted kindly. GKI and Dr Boz ratio included.", "pulse"),
+    item("#/care", "Care calendar", "Appointments, check-ups and your question list for the doctor. Private, optional PIN.", "lock"),
+    item("#/settings", "Settings and data", "Way of eating, exclusions, household, backup, and the promises this app makes."),
     el("div", { class: "card flat" },
       el("h3", {}, "About Alma"),
       el("p", { class: "muted" }, "Built by someone who learned the hard way that the best time to care about your health is before you have to. Everything here follows one idea: know first, then choose."),
@@ -376,8 +410,70 @@ function setupPin(main, navigate) {
 // ---------- settings ----------
 export function renderSettings(main, navigate) {
   const s = store.get();
+
+  // ---- eating style ----
+  const styleCard = el("div", { class: "card" },
+    el("h2", {}, "Way of eating"),
+    el("div", { class: "chip-row" },
+      el("button", { class: "chip" + (s.eatingStyle === "med" ? " on" : ""), onclick: () => { store.update({ eatingStyle: "med" }); renderSettings(main, navigate); } }, "Whole-food Mediterranean"),
+      el("button", { class: "chip" + (s.eatingStyle === "keto" ? " on" : ""), onclick: () => {
+        openModal(
+          el("h2", {}, "Switching to ketogenic"),
+          el("p", { class: "muted" }, "Alma will plan from the ketogenic recipe set (roughly 6 to 12 g net carbs per serve) and show net carbs on recipes. Two honest notes first:"),
+          el("ul", { class: "muted", style: "padding-left:1.1rem" },
+            el("li", {}, "Tell your GP, especially if you take any medication: keto changes how some medicines behave."),
+            el("li", {}, "Adult plates only. Children eat the same dinners plus their carbs; a ketogenic diet is never a child's diet outside specialist epilepsy care."),
+          ),
+          el("div", { class: "btn-row" },
+            el("button", { class: "btn", onclick: () => { store.update({ eatingStyle: "keto" }); closeModal(); toast("Keto mode on. Plan a new week to feel it."); renderSettings(main, navigate); } }, "Understood, switch"),
+            el("button", { class: "btn ghost", onclick: closeModal }, "Stay Mediterranean"),
+          ),
+        );
+      } }, "Ketogenic"),
+    ),
+    el("p", { class: "tiny" }, s.eatingStyle === "keto"
+      ? "Keto mode is on: the planner uses the low-carb set and shows net carbs. The Mediterranean pattern remains one tap away."
+      : "The default, and the best-evidenced pattern in nutrition. Keto is available as a deliberate tool."),
+  );
+
+  // ---- exclusions ----
+  const excl = s.exclusions;
+  const exclList = [
+    ...excl.always.map((n) => ({ n, kind: "always" })),
+    ...excl.temp.map((t) => ({ n: t.name, kind: "until " + fmtDay(t.until), raw: t })),
+  ];
+  const exName = el("input", { type: "text", placeholder: "e.g. pork, dairy, mushrooms" });
+  const exUntil = el("input", { type: "date" });
+  const exclCard = el("div", { class: "card" },
+    el("h2", {}, "Foods you don't eat"),
+    el("p", { class: "tiny" }, "Always, or for a season (treatment, faith, a gut protocol). Excluded foods simply vanish from planning; temporary ones come back on their review date."),
+    exclList.length
+      ? el("div", { class: "chip-row" }, ...exclList.map((x) =>
+          el("button", { class: "chip on", title: "Tap to remove", onclick: () => {
+            store.mutate((st) => {
+              st.exclusions.always = st.exclusions.always.filter((a) => a !== x.n);
+              st.exclusions.temp = st.exclusions.temp.filter((t) => t.name !== x.n);
+            });
+            renderSettings(main, navigate);
+          } }, `${x.n} · ${x.kind} ✕`)))
+      : el("p", { class: "muted" }, "Nothing excluded."),
+    el("div", { class: "field" }, el("label", {}, "Add an exclusion"), exName),
+    el("div", { class: "field" }, el("label", {}, "Until (leave empty for always)"), exUntil),
+    el("button", { class: "btn secondary small", onclick: () => {
+      const n = exName.value.trim().toLowerCase();
+      if (!n) return;
+      store.mutate((st) => {
+        if (exUntil.value) st.exclusions.temp.push({ name: n, until: exUntil.value });
+        else st.exclusions.always.push(n);
+      });
+      renderSettings(main, navigate); toast("Excluded. The planner will respect it.");
+    } }, "Exclude"),
+  );
+
   main.replaceChildren(
     el("div", { class: "page-head" }, el("h1", {}, "Settings and data")),
+    styleCard,
+    exclCard,
     el("div", { class: "card" },
       el("h2", {}, "Household"),
       el("p", { class: "muted" }, `${s.profile.adults} adult${s.profile.adults > 1 ? "s" : ""}, ${s.profile.kids} child${s.profile.kids === 1 ? "" : "ren"}` +
@@ -394,8 +490,11 @@ export function renderSettings(main, navigate) {
       el("div", { class: "btn-row" },
         el("button", {
           class: "btn secondary small",
-          onclick: () => {
-            const blob = new Blob([store.exportJSON()], { type: "application/json" });
+          onclick: async () => {
+            toast("Bundling everything, including journal media…");
+            const journal = await exportJournal();
+            const full = { ...JSON.parse(store.exportJSON()), journal };
+            const blob = new Blob([JSON.stringify(full)], { type: "application/json" });
             const a = el("a", { href: URL.createObjectURL(blob), download: `alma-backup-${todayISO()}.json` });
             a.click(); URL.revokeObjectURL(a.href);
           },
@@ -405,7 +504,16 @@ export function renderSettings(main, navigate) {
           inp.addEventListener("change", async () => {
             const f = inp.files[0];
             if (!f) return;
-            try { store.importJSON(await f.text()); toast("Backup restored"); navigate("#/"); }
+            try {
+              const text = await f.text();
+              const parsed = JSON.parse(text);
+              const journal = parsed.journal || [];
+              delete parsed.journal;
+              store.importJSON(JSON.stringify(parsed));
+              if (journal.length) await importJournal(journal);
+              toast("Backup restored" + (journal.length ? ` (${journal.length} journal entries)` : ""));
+              navigate("#/");
+            }
             catch { toast("That file doesn't look like an Alma backup"); }
           });
           return el("span", {}, inp, el("button", { class: "btn ghost small", onclick: () => inp.click() }, "Restore backup"));

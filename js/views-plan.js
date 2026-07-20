@@ -203,7 +203,7 @@ export function renderPlan(main, navigate) {
       r
         ? el("span", {},
             el("button", { class: "meal-name", onclick: () => openRecipe(r) }, r.name),
-            el("span", { class: "meal-sub" }, slot.leftover ? "Leftovers from the batch pot" : `${r.total} min · serves ${r.serves}`))
+            el("span", { class: "meal-sub" }, slot.leftover ? "Leftovers from the batch pot" : `${r.total} min · serves ${r.serves}` + (store.get().eatingStyle === "keto" && r.netCarbs ? ` · ~${r.netCarbs} g net carbs` : "")))
         : el("span", { class: "meal-name empty" }, "Nothing planned"),
       el("button", { class: "btn ghost small", "aria-label": "Swap " + DAY_NAMES[k], onclick: () => { swapDay(k); renderPlan(main, navigate); } }, icon("swap", 16)),
     );
@@ -312,7 +312,7 @@ export function renderRecipes(main) {
         list.map((r) =>
           el("button", { class: "recipe-card", onclick: () => openRecipe(r) },
             el("span", { class: "rname" }, s.mealMemory[r.id] === "loved" ? "♥ " : "", r.name),
-            el("span", { class: "rmeta" }, `${r.total} min · serves ${r.serves}`),
+            el("span", { class: "rmeta" }, `${r.total} min · serves ${r.serves}` + (r.netCarbs ? ` · ~${r.netCarbs} g` : "")),
           ))),
     );
   }
@@ -336,6 +336,7 @@ export function openRecipe(r) {
       el("span", { class: "tag" }, `${r.total} min total`),
       el("span", { class: "tag" }, `serves ${r.serves}`),
       r.tags.includes("batch") && el("span", { class: "tag green" }, "doubles well"),
+      r.netCarbs && el("span", { class: "tag amber" }, `~${r.netCarbs} g net carbs`),
     ),
     el("h3", {}, "Ingredients"),
     el("ul", { class: "ingredients" }, r.ingredients.map((i) => el("li", {}, `${i.n}: ${i.q}`))),

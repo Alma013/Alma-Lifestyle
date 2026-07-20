@@ -6,7 +6,7 @@ import { RECIPES } from "./data.js";
 const KEY = "alma.v1";
 
 const DEFAULT_STATE = {
-  version: 1,
+  version: 2,
   onboarded: false,
   disclaimerAccepted: false,
   profile: {
@@ -19,6 +19,26 @@ const DEFAULT_STATE = {
     fishOk: true,
     meatOk: true,
   },
+  eatingStyle: "med",   // "med" (whole-food Mediterranean) | "keto" (adult plates only)
+  exclusions: {
+    always: [],         // ["pork", ...] ingredient words excluded for good
+    temp: [],           // { name, until: ISO } excluded until a review date
+  },
+  fasting: {
+    protocol: null,     // "12-12" | "14-10" | "16-8"
+    activeStart: null,  // ISO datetime while a fast is running
+    log: [],            // { start, end, hours } most recent first, cap 60
+    safetyAccepted: false,
+  },
+  signals: {
+    unit: "mmol",       // glucose display unit: "mmol" | "mgdl"
+    readings: [],       // { id, t: ISO datetime, type: "glucose"|"ketone", v: number (glucose always stored mmol/L), ctx: "fasting"|"pre"|"post"|"" , note }
+    labs: [],           // { id, date, name, value, unit }
+  },
+  capsules: [],         // { id, to, title, body, openOn, created, opened }
+  journalIndex: [],     // metadata only; photo/audio blobs live in IndexedDB
+  arrivalLast: null,    // ISO date the arrival passage last showed
+  sanctuaryMinutes: 0,  // lifetime minutes of breathing/sound, for gentle recognition
   week: null,           // { start: ISO(Mon), days: { mon: {recipeId|null, leftoverOf|null} }, checked: {itemKey:bool}, extras: [] }
   weekHistory: [],      // archived weeks (most recent first, cap 26)
   habitLogs: {},        // { "2026-07-20": { move:true, sleep:false, ... } }
@@ -41,7 +61,17 @@ function load() {
     const raw = localStorage.getItem(KEY);
     if (!raw) return structuredClone(DEFAULT_STATE);
     const parsed = JSON.parse(raw);
-    return { ...structuredClone(DEFAULT_STATE), ...parsed, profile: { ...DEFAULT_STATE.profile, ...(parsed.profile || {}) }, care: { ...structuredClone(DEFAULT_STATE.care), ...(parsed.care || {}) } };
+    const merged = {
+      ...structuredClone(DEFAULT_STATE),
+      ...parsed,
+      profile: { ...DEFAULT_STATE.profile, ...(parsed.profile || {}) },
+      care: { ...structuredClone(DEFAULT_STATE.care), ...(parsed.care || {}) },
+      exclusions: { ...structuredClone(DEFAULT_STATE.exclusions), ...(parsed.exclusions || {}) },
+      fasting: { ...structuredClone(DEFAULT_STATE.fasting), ...(parsed.fasting || {}) },
+      signals: { ...structuredClone(DEFAULT_STATE.signals), ...(parsed.signals || {}) },
+    };
+    merged.version = 2; // v1 backups upgrade in place; nothing is lost
+    return merged;
   } catch {
     return structuredClone(DEFAULT_STATE);
   }
@@ -60,7 +90,7 @@ export const store = {
   exportJSON() { return JSON.stringify(state, null, 2); },
   importJSON(text) {
     const parsed = JSON.parse(text); // throws on bad input; caller catches
-    if (typeof parsed !== "object" || parsed === null || parsed.version !== 1) {
+    if (typeof parsed !== "object" || parsed === null || ![1, 2].includes(parsed.version)) {
       throw new Error("Not an Alma backup file");
     }
     state = { ...structuredClone(DEFAULT_STATE), ...parsed };
@@ -106,13 +136,22 @@ export function recipeById(id) {
   return RECIPES.find((r) => r.id === id) || null;
 }
 
+export function activeExclusions() {
+  const today = todayISO();
+  const temp = state.exclusions.temp.filter((t) => !t.until || t.until >= today);
+  return [...state.exclusions.always, ...temp.map((t) => t.name)];
+}
+
 export function eligibleRecipes() {
   const p = state.profile;
+  const excluded = activeExclusions();
   return RECIPES.filter((r) => {
+    if (state.eatingStyle === "keto" && !r.tags.includes("keto")) return false;
     if (!p.fishOk && r.tags.includes("fish")) return false;
-    if (!p.meatOk && (r.tags.includes("chicken") || ["beef-stirfry", "sarmale-light", "burgers-home", "pork-apple-tray"].includes(r.id))) return false;
+    if (!p.meatOk && (r.tags.includes("chicken") || ["beef-stirfry", "sarmale-light", "burgers-home", "pork-apple-tray", "keto-mititei", "keto-pork-cabbage", "keto-lettuce-tacos", "keto-butter-chicken", "keto-cobb", "keto-zoodle-carbonara"].includes(r.id))) return false;
     if (state.mealMemory[r.id] === "vetoed") return false;
     if (p.allergies.some((a) => r.ingredients.some((i) => i.n.toLowerCase().includes(a.toLowerCase())))) return false;
+    if (excluded.some((x) => r.ingredients.some((i) => i.n.toLowerCase().includes(x.toLowerCase())))) return false;
     return true;
   });
 }
@@ -275,4 +314,67 @@ export async function hashPin(pin) {
 
 export function uid() {
   return Math.random().toString(36).slice(2, 10);
+}
+
+// ---------- fasting ----------
+export function startFast() {
+  store.mutate((s) => { s.fasting.activeStart = new Date().toISOString(); });
+}
+export function endFast() {
+  store.mutate((s) => {
+    if (!s.fasting.activeStart) return;
+    const start = s.fasting.activeStart;
+    const end = new Date().toISOString();
+    const hours = Math.round(((new Date(end) - new Date(start)) / 36e5) * 10) / 10;
+    if (hours >= 0.5) s.fasting.log.unshift({ start, end, hours });
+    s.fasting.log = s.fasting.log.slice(0, 60);
+    s.fasting.activeStart = null;
+  });
+}
+export function fastElapsedHours() {
+  const s = state.fasting.activeStart;
+  return s ? (Date.now() - new Date(s).getTime()) / 36e5 : 0;
+}
+
+// ---------- signals (glucose, ketones, labs) ----------
+export const MMOL_PER_MGDL = 1 / 18.016;
+export function toMmol(v, unit) { return unit === "mgdl" ? v * MMOL_PER_MGDL : v; }
+export function displayGlucose(vMmol) {
+  return state.signals.unit === "mgdl"
+    ? { v: Math.round(vMmol * 18.016), unit: "mg/dL" }
+    : { v: Math.round(vMmol * 10) / 10, unit: "mmol/L" };
+}
+
+export function addReading(type, vMmol, ctx = "", note = "", t = new Date().toISOString()) {
+  store.mutate((s) => {
+    s.signals.readings.unshift({ id: uid(), t, type, v: vMmol, ctx, note });
+    s.signals.readings = s.signals.readings.slice(0, 2000);
+  });
+}
+
+// Latest same-morning glucose+ketone pair → GKI and Dr Boz ratio.
+// GKI = glucose mmol / ketones mmol; Boz = glucose mg/dL / ketones mmol. Trend tools, not verdicts.
+export function latestMetabolicPair() {
+  const byDay = {};
+  for (const r of state.signals.readings) {
+    const day = r.t.slice(0, 10);
+    (byDay[day] ||= {})[r.type] = (byDay[day][r.type] ?? r.v); // first (most recent) per type per day
+  }
+  const days = Object.keys(byDay).sort().reverse();
+  for (const d of days) {
+    const g = byDay[d].glucose, k = byDay[d].ketone;
+    if (g != null && k != null && k > 0) {
+      return { date: d, glucose: g, ketone: k, gki: Math.round((g / k) * 10) / 10, boz: Math.round((g * 18.016) / k) };
+    }
+  }
+  return null;
+}
+
+// Average rise from pre-meal to post-meal readings, for the gentle pattern hints.
+export function mealResponseSummary() {
+  const pre = state.signals.readings.filter((r) => r.type === "glucose" && r.ctx === "pre");
+  const post = state.signals.readings.filter((r) => r.type === "glucose" && r.ctx === "post");
+  if (!pre.length || !post.length) return null;
+  const avg = (a) => a.reduce((x, y) => x + y.v, 0) / a.length;
+  return { n: Math.min(pre.length, post.length), rise: Math.round((avg(post) - avg(pre)) * 10) / 10 };
 }

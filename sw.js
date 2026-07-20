@@ -1,9 +1,10 @@
 // Alma · service worker: offline app shell, network-first with cache fallback.
-const CACHE = "alma-v2";
+const CACHE = "alma-v3";
 const ASSETS = [
   "./", "./index.html", "./css/styles.css", "./manifest.webmanifest",
-  "./js/app.js", "./js/store.js", "./js/ui.js", "./js/data.js",
-  "./js/views-plan.js", "./js/views-track.js",
+  "./js/app.js", "./js/store.js", "./js/ui.js", "./js/data.js", "./js/data2.js",
+  "./js/views-plan.js", "./js/views-track.js", "./js/views-recharge.js",
+  "./js/views-signals.js", "./js/views-journal.js", "./js/audio.js", "./js/idb.js",
   "./icons/icon.svg", "./icons/icon-192.png", "./icons/icon-512.png",
 ];
 

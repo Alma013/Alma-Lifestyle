@@ -7,6 +7,11 @@ Alma plans a week of whole-food, family-sized dinners around the nights you're a
 ## What makes it different
 
 - **The why is always there.** Every recipe and every nudge carries a one-line reason and a named source (NHMRC, World Cancer Research Fund, WHO, Heart Foundation, and peers), with an honest label for how strong the evidence is. No superfoods, no fear.
+- **An experience, not a dashboard.** The day opens with a passage for the soul (Psalms and older wisdom, rotating daily). A Recharge sanctuary offers guided breathing, on-device synthesised soundscapes (432 Hz, 528 Hz, ocean, rain) with honest framing, and journaling prompts for the inner power.
+- **Two ways of eating, honestly ranked.** Whole-food Mediterranean by default; a deliberate ketogenic mode (net carbs shown, adult plates only) informed by the published work of Dr William Li, Jessie Inchauspe, Dr Boz, Dr Jason Fung and Dr Thomas Seyfried, each labelled with what to take and what to hold lightly.
+- **Fasting with a spine.** 12:12, 14:10 and 16:8 timers behind a real safety gate; water fasting beyond a day is deliberately not timed here, it belongs with a doctor.
+- **Signals, kindly.** Manual or CSV-imported glucose and ketone readings (LibreView, Dexcom Clarity, Keto-Mojo style exports), GKI and Dr Boz ratio, lab-result trends, and gentle cited pattern hints. Charts, never verdicts.
+- **A journal and a time capsule.** Photos, voice notes and words in on-device IndexedDB; letters sealed until a chosen date, for the future you or the people you love. All of it exports in one backup file.
 - **Wellbeing first, by design.** No calories, no weight tracking, no streaks, no "cheat days". The app measures energy, sleep and mood, and treats a blank day as information, not failure.
 - **Family real, not family ideal.** One dinner for the whole table, rushed nights get 15-minute meals or planned leftovers, and the planner learns what the family actually loved.
 - **Private by architecture.** No account, no server, no analytics. Everything lives in the browser on your device; backup is a file you download and keep. The optional Care calendar (appointments, questions for your doctor) can be PIN-locked.
@@ -23,6 +28,12 @@ python3 -m http.server 8000
 ```
 
 Any static host works (Netlify, Cloudflare Pages, GitHub Pages). It installs as a PWA and works offline after first load.
+
+## Roadmap (post-launch)
+
+- Video recipe walk-throughs (optional, on-device)
+- Direct sensor pairing where platforms allow it (CSV import covers the gap)
+- Romanian-language mode
 
 ## Stack
 

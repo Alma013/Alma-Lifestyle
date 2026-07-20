@@ -4,17 +4,25 @@ import { el, icon } from "./ui.js";
 import { store } from "./store.js";
 import { renderOnboarding, renderToday, renderPlan, renderGroceries, renderRecipes } from "./views-plan.js";
 import { renderTrack, renderLearn, renderMore, renderCareGate, renderSettings } from "./views-track.js";
+import { renderRecharge, leaveRecharge, maybeShowArrival } from "./views-recharge.js";
+import { renderFasting, renderSignals } from "./views-signals.js";
+import { renderJournal, renderCapsule } from "./views-journal.js";
 
 const ROUTES = [
   { hash: "#/", label: "Today", icon: "home", render: renderToday },
   { hash: "#/plan", label: "Plan", icon: "plan", render: renderPlan },
   { hash: "#/track", label: "Track", icon: "track", render: renderTrack },
-  { hash: "#/learn", label: "Learn", icon: "learn", render: renderLearn },
+  { hash: "#/recharge", label: "Recharge", icon: "sun", render: renderRecharge },
   { hash: "#/more", label: "More", icon: "more", render: renderMore },
 ];
 const HIDDEN_ROUTES = [
   { hash: "#/groceries", render: renderGroceries, parent: "#/plan" },
   { hash: "#/recipes", render: renderRecipes, parent: "#/plan" },
+  { hash: "#/learn", render: renderLearn, parent: "#/more" },
+  { hash: "#/fasting", render: renderFasting, parent: "#/more" },
+  { hash: "#/signals", render: renderSignals, parent: "#/more" },
+  { hash: "#/journal", render: renderJournal, parent: "#/more" },
+  { hash: "#/capsule", render: renderCapsule, parent: "#/more" },
   { hash: "#/care", render: renderCareGate, parent: "#/more" },
   { hash: "#/settings", render: renderSettings, parent: "#/more" },
 ];
@@ -27,6 +35,7 @@ export function navigate(hash) {
 }
 
 function route() {
+  leaveRecharge(); // stop any breathing timers when the view changes
   const hash = location.hash || "#/";
   if (!store.get().onboarded) {
     renderNav(null);
@@ -54,6 +63,7 @@ function renderNav(activeHash) {
 window.addEventListener("hashchange", route);
 store.subscribe(() => {/* views re-render themselves; hook kept for future needs */});
 route();
+maybeShowArrival(); // the daily passage, once per day, after the first paint
 
 // PWA: offline shell
 if ("serviceWorker" in navigator && location.protocol !== "file:") {
