@@ -455,7 +455,7 @@ export function renderSettings(main, navigate) {
       el("button", { class: "chip" + (s.eatingStyle === "keto" ? " on" : ""), onclick: () => {
         openModal(
           el("h2", {}, "Switching to ketogenic"),
-          el("p", { class: "muted" }, "Alma will plan from the ketogenic recipe set (roughly 6 to 12 g net carbs per serve) and show net carbs on recipes. Two honest notes first:"),
+          el("p", { class: "muted" }, "Alma will plan from the ketogenic recipe set (4 to 18 g computed net carbs per serve, shown on every recipe) and it can go stricter in Settings. Two honest notes first:"),
           el("ul", { class: "muted", style: "padding-left:1.1rem" },
             el("li", {}, "Tell your GP, especially if you take any medication: keto changes how some medicines behave."),
             el("li", {}, "Adult plates only. Children eat the same dinners plus their carbs; a ketogenic diet is never a child's diet outside specialist epilepsy care."),
@@ -473,9 +473,9 @@ export function renderSettings(main, navigate) {
     ...(s.eatingStyle === "keto" ? [el("div", { class: "chip-row", style: "margin-top:0.4rem" },
       el("button", {
         class: "chip" + (s.ketoStrict ? " on" : ""),
-        onclick: () => { store.update({ ketoStrict: !s.ketoStrict }); renderSettings(main, navigate); toast(s.ketoStrict ? "Standard keto" : "Strict keto: the planner now keeps dinners under 7 g net carbs, no added sugar."); },
+        onclick: () => { store.update({ ketoStrict: !s.ketoStrict }); renderSettings(main, navigate); toast(s.ketoStrict ? "Standard keto" : "Strict keto: dinners now stay at 8 g net carbs or under, no added sugar."); },
       }, "Strict: max 20 g net carbs a day, no sugar")),
-      el("p", { class: "tiny" }, s.ketoStrict ? "Dinners stay under about 7 g net carbs so the whole day can stay under 20. Tell your care team; this depth of restriction deserves supervision." : "")] : []),
+      el("p", { class: "tiny" }, s.ketoStrict ? "Dinners stay at 8 g net carbs or under, computed from the actual ingredients, so a keto day built around them stays near 20 g. Tell your care team; this depth of restriction deserves supervision." : "")] : []),
     el("div", { class: "divider" }),
     el("label", { style: "display:block;font-size:0.85rem;font-weight:600;color:var(--ink-2);margin-bottom:0.3rem" }, "What is the season for?"),
     el("div", { class: "chip-row" },

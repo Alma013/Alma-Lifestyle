@@ -159,7 +159,7 @@ export function eligibleRecipes() {
   const excluded = activeExclusions();
   return RECIPES.filter((r) => {
     if (state.eatingStyle === "keto" && !r.tags.includes("keto")) return false;
-    if (state.eatingStyle === "keto" && state.ketoStrict && ((r.netCarbs || 99) > 7 || !r.tags.includes("nosugar"))) return false;
+    if (state.eatingStyle === "keto" && state.ketoStrict && ((r.netCarbs || 99) > 8 || !r.tags.includes("nosugar"))) return false;
     for (const pref of p.dietPrefs || []) if (!r.tags.includes(pref)) return false;
     if (!p.fishOk && r.tags.includes("fish")) return false;
     if (!p.meatOk && (r.tags.includes("chicken") || ["beef-stirfry", "sarmale-light", "burgers-home", "pork-apple-tray", "keto-mititei", "keto-pork-cabbage", "keto-lettuce-tacos", "keto-butter-chicken", "keto-cobb", "keto-zoodle-carbonara"].includes(r.id))) return false;

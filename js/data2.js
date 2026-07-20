@@ -139,6 +139,65 @@ export const STEADY_TECHNIQUES = [
     source: "Cochrane and meta-analytic reviews of progressive muscle relaxation",
   },
 ];
+// ---------- the achiever's mindset: getting to the state ----------
+export const ACHIEVER_TECHNIQUES = [
+  {
+    id: "implementation",
+    name: "Decide once: when X, I will Y",
+    when: "Goals that keep dissolving into good intentions",
+    steps: ["Take the thing you keep meaning to do.", "Write it as: when [specific cue], I will [specific action]. When I pour the morning coffee, I will book the walk.", "Say it once out loud. The decision is now made; the moment only has to arrive."],
+    why: "Implementation intentions are one of the most replicated effects in behaviour science: pre-deciding the cue-action pair roughly doubles follow-through because the choice no longer happens in the tired moment.",
+    strength: "strong",
+    source: "Gollwitzer and Sheeran, meta-analysis of 94 studies (2006)",
+  },
+  {
+    id: "rehearsal",
+    name: "Run the film first",
+    when: "Before anything you want to do well: a scan day, a hard conversation, a return to training",
+    steps: ["Close your eyes and run the event once as a film: where you stand, what you say, how your hands feel.", "Run it again at real speed, including the one moment you fear, going fine.", "Open your eyes and do the first small physical step immediately."],
+    why: "Mental rehearsal measurably improves execution in sport, surgery and public performance; the brain treats vivid rehearsal as practice. It does not replace practice; it primes it.",
+    strength: "emerging",
+    source: "Motor-imagery meta-analyses (e.g. Driskell et al.; surgical training RCTs)",
+  },
+  {
+    id: "distanced-talk",
+    name: "Coach yourself by name",
+    when: "Nerves, self-doubt, the inner critic getting loud",
+    steps: ["Switch the inner voice from I to your own name or you.", "Ask: what does [your name] need to do in the next five minutes?", "Answer as the coach would: specific, warm, brief. Then do that one thing."],
+    why: "Distanced self-talk recruits the brain's regulation circuits with surprisingly little effort: people reason about themselves more wisely from one step back.",
+    strength: "emerging",
+    source: "Kross et al., Journal of Personality and Social Psychology (2014)",
+  },
+  {
+    id: "move-first",
+    name: "Move before you decide how you feel",
+    when: "Flat mornings, dread before tasks, the couch's gravity",
+    steps: ["Two minutes of brisk anything: stairs, fast walk, twenty slow squats.", "Only then ask how you feel and what is next.", "Ride the raised state into the first small task."],
+    why: "A short burst of movement reliably lifts arousal and mood within minutes; it is the fastest legal state-changer there is, and the decision made after it is made by a different chemistry.",
+    strength: "strong",
+    source: "Acute-exercise and mood meta-analyses (Sports Medicine)",
+  },
+  {
+    id: "smallest-win",
+    name: "Bank the smallest win",
+    when: "Big goals that feel far away",
+    steps: ["Shrink today's contribution until it is almost embarrassing: one paragraph, one phone call, one vegetable.", "Do it early and mark it done somewhere you can see.", "Let the day be a success at 9 am; anything more is bonus."],
+    why: "The strongest single driver of motivation across hundreds of workdays studied was visible progress on meaningful work, however small. Momentum is built from wins you can see, not wins you can brag about.",
+    strength: "emerging",
+    source: "Amabile and Kramer, The Progress Principle (2011)",
+  },
+  {
+    id: "reserve",
+    name: "The reserve is real",
+    when: "The moment you decide you are finished",
+    steps: ["Notice the thought: I have nothing left.", "Recall the physiology: the mind signals empty long before the body is; there are reserves you have not touched.", "Negotiate one more small unit: one more minute, one more length, one more honest sentence. Then decide again."],
+    why: "Fatigue research suggests the sense of exhaustion is a protective forecast by the brain, not a fuel gauge reading zero; trained people routinely find more when the forecast is renegotiated. Feeling done and being done are different things.",
+    strength: "thin",
+    source: "Noakes, central governor model, British Journal of Sports Medicine (2012); anticipatory-regulation literature",
+  },
+];
+export const ACHIEVER_NOTE = "State first, then the task. None of this is hustle; it is the same gentleness as the rest of Alma, pointed forward.";
+
 export const STEADY_NOTE = "These tools are for living alongside managed pain and big feelings. Pain that is new, severe or frightening is a same-day doctor conversation, not a breathing exercise. And if the dark ever gets heavy, Lifeline is there around the clock on 13 11 14.";
 
 // ---------- fasting ----------

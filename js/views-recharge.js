@@ -3,7 +3,7 @@
 
 import { el, icon, toast, openModal, closeModal } from "./ui.js";
 import { store, todayISO, uid, greeting } from "./store.js";
-import { passageForToday, PROMPTS, SOUNDSCAPES, STEADY_TECHNIQUES, STEADY_NOTE } from "./data2.js";
+import { passageForToday, PROMPTS, SOUNDSCAPES, STEADY_TECHNIQUES, STEADY_NOTE, ACHIEVER_TECHNIQUES, ACHIEVER_NOTE } from "./data2.js";
 import { openWhy } from "./views-track.js";
 import { playScape, stopScape, playingId, chime } from "./audio.js";
 import { addJournalEntry } from "./idb.js";
@@ -160,6 +160,13 @@ export function renderRecharge(main, navigate) {
       el("div", { class: "chip-row" },
         ...STEADY_TECHNIQUES.map((t) => el("button", { class: "chip", onclick: () => openSteady(t) }, t.name))),
       el("p", { class: "tiny" }, STEADY_NOTE),
+    ),
+    el("div", { class: "card" },
+      el("h2", {}, "For the state of an achiever"),
+      el("p", { class: "muted" }, "Six ways to get to the state before the task: pre-decisions, rehearsal, self-coaching, movement, momentum and the reserve."),
+      el("div", { class: "chip-row" },
+        ...ACHIEVER_TECHNIQUES.map((t) => el("button", { class: "chip", onclick: () => openSteady(t) }, t.name))),
+      el("p", { class: "tiny" }, ACHIEVER_NOTE),
     ),
     el("div", { class: "card prompt-card" },
       el("h2", {}, "For the inner power"),

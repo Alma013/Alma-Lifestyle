@@ -396,7 +396,7 @@ export function openRecipe(r) {
       r.tags.includes("nosugar") && el("span", { class: "tag" }, "no added sugar"),
     ),
     r.macros && el("p", { class: "tiny", style: "margin:-0.2rem 0 0.8rem" },
-      `Per serve, approximately: ${r.macros.kcal} kcal · protein ${r.macros.protein} g · fat ${r.macros.fat} g · carbs ${r.macros.carbs} g (sugars ${r.macros.sugars} g) · fibre ${r.macros.fibre} g. Estimates for orientation, not accounting.`),
+      `Per serve, approximately: ${r.macros.kcal} kcal · protein ${r.macros.protein} g · fat ${r.macros.fat} g · carbs ${r.macros.carbs} g (sugars ${r.macros.sugars} g) · fibre ${r.macros.fibre} g. Computed from the listed quantities against published food-composition data (AFCD and USDA); rounded, a guide rather than a lab result.`),
     el("h3", {}, "Ingredients"),
     el("ul", { class: "ingredients" }, r.ingredients.map((i) => {
       const warn = ingredientWarning(i.n);

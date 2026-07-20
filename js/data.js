@@ -17,7 +17,7 @@ export const RECIPES = [
   {
     id: "sheetpan-salmon", name: "Tray-baked salmon with potatoes and broccolini", time: 15, total: 35,
     serves: 4, tags: ["fish", "oven", "kidsafe", "nosugar"],
-    macros: { kcal: 520, protein: 34, fat: 24, carbs: 38, sugars: 4, fibre: 6 },
+    macros: { kcal: 580, protein: 37, fat: 30, carbs: 35, sugars: 3, fibre: 7 },
     ingredients: [
       { n: "Salmon fillets", q: "4", s: "fishmeat" },
       { n: "Baby potatoes", q: "800 g", s: "produce" },
@@ -38,7 +38,7 @@ export const RECIPES = [
   {
     id: "ciorba-legume", name: "Ciorbă de legume (vegetable sour soup)", time: 25, total: 45,
     serves: 6, tags: ["veg", "romanian", "batch", "kidsafe", "vegan", "nosugar"],
-    macros: { kcal: 190, protein: 5, fat: 8, carbs: 26, sugars: 9, fibre: 7 },
+    macros: { kcal: 150, protein: 4, fat: 5, carbs: 21, sugars: 7, fibre: 5 },
     ingredients: [
       { n: "Carrots", q: "3", s: "produce" },
       { n: "Parsnip", q: "1", s: "produce" },
@@ -63,7 +63,7 @@ export const RECIPES = [
   {
     id: "chicken-tray", name: "Paprika chicken with roast vegetables", time: 15, total: 50,
     serves: 4, tags: ["chicken", "oven", "kidsafe", "batch", "gf", "nosugar"],
-    macros: { kcal: 480, protein: 38, fat: 20, carbs: 34, sugars: 10, fibre: 7 },
+    macros: { kcal: 570, protein: 38, fat: 30, carbs: 32, sugars: 13, fibre: 6 },
     ingredients: [
       { n: "Chicken thighs, bone in", q: "8", s: "fishmeat" },
       { n: "Sweet potato", q: "2", s: "produce" },
@@ -85,7 +85,7 @@ export const RECIPES = [
   {
     id: "lentil-bolognese", name: "Lentil bolognese with wholemeal spaghetti", time: 25, total: 40,
     serves: 6, tags: ["legume", "veg", "batch", "kidsafe", "nosugar"],
-    macros: { kcal: 520, protein: 24, fat: 12, carbs: 78, sugars: 10, fibre: 14 },
+    macros: { kcal: 510, protein: 22, fat: 11, carbs: 71, sugars: 11, fibre: 16 },
     ingredients: [
       { n: "Brown lentils, dry or tinned", q: "2 cups cooked", s: "pantry" },
       { n: "Wholemeal spaghetti", q: "500 g", s: "pantry" },
@@ -108,8 +108,8 @@ export const RECIPES = [
   },
   {
     id: "fish-parcels", name: "White fish parcels with cherry tomatoes and olives", time: 15, total: 30,
-    serves: 4, tags: ["fish", "quick", "oven", "keto", "nosugar"], netCarbs: 7,
-    macros: { kcal: 420, protein: 32, fat: 14, carbs: 38, sugars: 5, fibre: 5 },
+    serves: 4, tags: ["fish", "quick", "oven", "nosugar"],
+    macros: { kcal: 440, protein: 41, fat: 12, carbs: 37, sugars: 6, fibre: 7 },
     ingredients: [
       { n: "Firm white fish fillets", q: "4", s: "fishmeat" },
       { n: "Cherry tomatoes", q: "400 g", s: "produce" },
@@ -130,7 +130,7 @@ export const RECIPES = [
   {
     id: "mamaliga-greens", name: "Mămăligă with cheese, egg and garlicky greens", time: 25, total: 25,
     serves: 4, tags: ["veg", "romanian", "quick", "nosugar"],
-    macros: { kcal: 460, protein: 20, fat: 18, carbs: 52, sugars: 4, fibre: 6 },
+    macros: { kcal: 470, protein: 19, fat: 21, carbs: 48, sugars: 2, fibre: 4 },
     ingredients: [
       { n: "Polenta", q: "1.5 cups", s: "pantry" },
       { n: "Telemea or feta", q: "150 g", s: "fridge" },
@@ -151,7 +151,7 @@ export const RECIPES = [
   {
     id: "chickpea-curry", name: "Coconut chickpea and pumpkin curry", time: 20, total: 35,
     serves: 5, tags: ["legume", "veg", "batch", "kidsafe", "gf", "nosugar", "vegan"],
-    macros: { kcal: 420, protein: 12, fat: 22, carbs: 42, sugars: 10, fibre: 11 },
+    macros: { kcal: 530, protein: 16, fat: 11, carbs: 84, sugars: 10, fibre: 12 },
     ingredients: [
       { n: "Tinned chickpeas", q: "2 x 400 g", s: "pantry" },
       { n: "Pumpkin", q: "700 g", s: "produce" },
@@ -173,7 +173,7 @@ export const RECIPES = [
   {
     id: "minestrone", name: "Big-pot minestrone with white beans", time: 20, total: 45,
     serves: 6, tags: ["legume", "veg", "batch", "kidsafe", "nosugar"],
-    macros: { kcal: 320, protein: 14, fat: 9, carbs: 44, sugars: 9, fibre: 11 },
+    macros: { kcal: 280, protein: 12, fat: 10, carbs: 30, sugars: 7, fibre: 10 },
     ingredients: [
       { n: "Cannellini beans, tinned", q: "2 x 400 g", s: "pantry" },
       { n: "Carrots", q: "2", s: "produce" },
@@ -198,7 +198,7 @@ export const RECIPES = [
   {
     id: "beef-stirfry", name: "Beef and broccoli stir-fry with brown rice", time: 20, total: 20,
     serves: 4, tags: ["quick", "nosugar"],
-    macros: { kcal: 520, protein: 34, fat: 18, carbs: 52, sugars: 8, fibre: 6 },
+    macros: { kcal: 530, protein: 32, fat: 8, carbs: 75, sugars: 4, fibre: 7 },
     ingredients: [
       { n: "Lean beef strips", q: "400 g", s: "fishmeat" },
       { n: "Broccoli", q: "1 large head", s: "produce" },
@@ -220,7 +220,7 @@ export const RECIPES = [
   {
     id: "salmon-pasta", name: "15-minute salmon and pea pasta", time: 15, total: 15,
     serves: 4, tags: ["fish", "quick", "kidsafe", "nosugar"],
-    macros: { kcal: 560, protein: 30, fat: 18, carbs: 64, sugars: 6, fibre: 8 },
+    macros: { kcal: 600, protein: 40, fat: 13, carbs: 72, sugars: 7, fibre: 13 },
     ingredients: [
       { n: "Tinned salmon", q: "2 x 210 g", s: "pantry" },
       { n: "Wholemeal pasta", q: "400 g", s: "pantry" },
@@ -241,7 +241,7 @@ export const RECIPES = [
   {
     id: "sarmale-light", name: "Weeknight cabbage roll bowls (sarmale flavours)", time: 25, total: 40,
     serves: 5, tags: ["romanian", "batch", "nosugar"],
-    macros: { kcal: 430, protein: 26, fat: 16, carbs: 42, sugars: 10, fibre: 8 },
+    macros: { kcal: 470, protein: 24, fat: 15, carbs: 53, sugars: 10, fibre: 6 },
     ingredients: [
       { n: "Lean pork and beef mince", q: "400 g", s: "fishmeat" },
       { n: "Savoy cabbage", q: "1/2 head", s: "produce" },
@@ -264,7 +264,7 @@ export const RECIPES = [
   {
     id: "shakshuka", name: "Shakshuka with white beans", time: 25, total: 25,
     serves: 4, tags: ["veg", "quick", "legume", "nosugar"],
-    macros: { kcal: 340, protein: 18, fat: 16, carbs: 30, sugars: 10, fibre: 9 },
+    macros: { kcal: 500, protein: 27, fat: 15, carbs: 56, sugars: 16, fibre: 13 },
     ingredients: [
       { n: "Eggs", q: "6", s: "fridge" },
       { n: "Tinned tomatoes", q: "2 x 400 g", s: "pantry" },
@@ -287,7 +287,7 @@ export const RECIPES = [
   {
     id: "roast-veg-couscous", name: "Roast vegetable and chickpea couscous", time: 15, total: 40,
     serves: 4, tags: ["veg", "legume", "oven", "batch", "vegan", "nosugar"],
-    macros: { kcal: 460, protein: 14, fat: 14, carbs: 66, sugars: 12, fibre: 11 },
+    macros: { kcal: 550, protein: 18, fat: 18, carbs: 70, sugars: 11, fibre: 14 },
     ingredients: [
       { n: "Pumpkin", q: "500 g", s: "produce" },
       { n: "Zucchini", q: "2", s: "produce" },
@@ -311,7 +311,7 @@ export const RECIPES = [
   {
     id: "chicken-soup", name: "Chicken, vegetable and barley soup", time: 20, total: 55,
     serves: 6, tags: ["chicken", "batch", "kidsafe", "nosugar"],
-    macros: { kcal: 340, protein: 28, fat: 8, carbs: 38, sugars: 6, fibre: 7 },
+    macros: { kcal: 300, protein: 19, fat: 14, carbs: 21, sugars: 2, fibre: 6 },
     ingredients: [
       { n: "Chicken thighs", q: "500 g", s: "fishmeat" },
       { n: "Pearl barley", q: "3/4 cup", s: "pantry" },
@@ -333,7 +333,7 @@ export const RECIPES = [
   {
     id: "fish-tacos", name: "Grilled fish tacos with cabbage slaw", time: 25, total: 25,
     serves: 4, tags: ["fish", "quick", "kidsafe", "nosugar"],
-    macros: { kcal: 470, protein: 30, fat: 16, carbs: 48, sugars: 6, fibre: 8 },
+    macros: { kcal: 460, protein: 38, fat: 12, carbs: 49, sugars: 8, fibre: 10 },
     ingredients: [
       { n: "Firm white fish fillets", q: "500 g", s: "fishmeat" },
       { n: "Corn or wholemeal tortillas", q: "8", s: "bakery" },
@@ -356,7 +356,7 @@ export const RECIPES = [
   {
     id: "tofu-noodles", name: "Crispy tofu and vegetable noodles", time: 25, total: 25,
     serves: 4, tags: ["veg", "quick", "vegan", "nosugar"],
-    macros: { kcal: 480, protein: 22, fat: 18, carbs: 56, sugars: 10, fibre: 7 },
+    macros: { kcal: 550, protein: 27, fat: 12, carbs: 76, sugars: 8, fibre: 12 },
     ingredients: [
       { n: "Firm tofu", q: "450 g", s: "fridge" },
       { n: "Wholemeal noodles", q: "375 g", s: "pantry" },
@@ -379,7 +379,7 @@ export const RECIPES = [
   {
     id: "baked-risotto", name: "Oven-baked pumpkin and spinach risotto", time: 15, total: 45,
     serves: 4, tags: ["veg", "oven", "kidsafe", "batch", "gf", "nosugar"],
-    macros: { kcal: 480, protein: 14, fat: 14, carbs: 70, sugars: 7, fibre: 6 },
+    macros: { kcal: 490, protein: 17, fat: 13, carbs: 72, sugars: 8, fibre: 4 },
     ingredients: [
       { n: "Arborio rice", q: "1.5 cups", s: "pantry" },
       { n: "Pumpkin", q: "600 g", s: "produce" },
@@ -401,7 +401,7 @@ export const RECIPES = [
   {
     id: "burgers-home", name: "Homemade beef and lentil burgers", time: 30, total: 30,
     serves: 4, tags: ["kidsafe", "legume", "nosugar"],
-    macros: { kcal: 540, protein: 32, fat: 22, carbs: 48, sugars: 8, fibre: 8 },
+    macros: { kcal: 540, protein: 33, fat: 12, carbs: 66, sugars: 15, fibre: 15 },
     ingredients: [
       { n: "Lean beef mince", q: "300 g", s: "fishmeat" },
       { n: "Brown lentils, tinned", q: "400 g", s: "pantry" },
@@ -424,7 +424,7 @@ export const RECIPES = [
   {
     id: "nicoise", name: "Warm tuna niçoise-style salad", time: 20, total: 20,
     serves: 4, tags: ["fish", "quick", "gf", "nosugar"],
-    macros: { kcal: 420, protein: 32, fat: 20, carbs: 24, sugars: 5, fibre: 6 },
+    macros: { kcal: 360, protein: 30, fat: 13, carbs: 28, sugars: 5, fibre: 6 },
     ingredients: [
       { n: "Tinned tuna in oil", q: "2 x 185 g", s: "pantry" },
       { n: "Baby potatoes", q: "600 g", s: "produce" },
@@ -445,8 +445,8 @@ export const RECIPES = [
   },
   {
     id: "veg-frittata", name: "Fridge-clearing vegetable frittata", time: 15, total: 35,
-    serves: 4, tags: ["veg", "quick", "kidsafe", "keto", "gf", "nosugar"], netCarbs: 8,
-    macros: { kcal: 320, protein: 20, fat: 20, carbs: 12, sugars: 6, fibre: 4 },
+    serves: 4, tags: ["veg", "quick", "kidsafe", "keto", "gf", "nosugar"], netCarbs: 11,
+    macros: { kcal: 340, protein: 20, fat: 22, carbs: 11, sugars: 7, fibre: 5 },
     ingredients: [
       { n: "Eggs", q: "8", s: "fridge" },
       { n: "Zucchini", q: "1", s: "produce" },
@@ -468,7 +468,7 @@ export const RECIPES = [
   {
     id: "pork-apple-tray", name: "Pork, apple and cabbage tray bake", time: 15, total: 40,
     serves: 4, tags: ["oven", "gf", "nosugar"],
-    macros: { kcal: 470, protein: 34, fat: 22, carbs: 32, sugars: 16, fibre: 7 },
+    macros: { kcal: 530, protein: 38, fat: 21, carbs: 48, sugars: 18, fibre: 10 },
     ingredients: [
       { n: "Pork loin steaks", q: "4", s: "fishmeat" },
       { n: "Apples", q: "2", s: "produce" },
@@ -490,7 +490,7 @@ export const RECIPES = [
   {
     id: "dahl", name: "Red lentil dahl with cucumber yoghurt", time: 20, total: 35,
     serves: 5, tags: ["legume", "veg", "batch", "kidsafe", "gf", "nosugar"],
-    macros: { kcal: 420, protein: 18, fat: 14, carbs: 54, sugars: 7, fibre: 10 },
+    macros: { kcal: 640, protein: 30, fat: 5, carbs: 110, sugars: 9, fibre: 11 },
     ingredients: [
       { n: "Red lentils", q: "2 cups", s: "pantry" },
       { n: "Tinned tomatoes", q: "400 g", s: "pantry" },
@@ -514,7 +514,7 @@ export const RECIPES = [
   {
     id: "greek-chicken-bowls", name: "Greek chicken and grain bowls", time: 25, total: 25,
     serves: 4, tags: ["chicken", "quick", "gf", "nosugar"],
-    macros: { kcal: 520, protein: 36, fat: 18, carbs: 48, sugars: 6, fibre: 7 },
+    macros: { kcal: 520, protein: 46, fat: 12, carbs: 48, sugars: 8, fibre: 10 },
     ingredients: [
       { n: "Chicken breast", q: "500 g", s: "fishmeat" },
       { n: "Freekeh or brown rice", q: "1.5 cups", s: "pantry" },
@@ -537,7 +537,7 @@ export const RECIPES = [
   {
     id: "zacusca-pasta", name: "Zacuscă-style capsicum and eggplant pasta", time: 20, total: 40,
     serves: 4, tags: ["veg", "romanian", "batch", "nosugar"],
-    macros: { kcal: 500, protein: 15, fat: 16, carbs: 72, sugars: 11, fibre: 10 },
+    macros: { kcal: 580, protein: 17, fat: 17, carbs: 81, sugars: 18, fibre: 16 },
     ingredients: [
       { n: "Eggplant", q: "1 large", s: "produce" },
       { n: "Red capsicum", q: "3", s: "produce" },
@@ -559,7 +559,7 @@ export const RECIPES = [
   {
     id: "banh-mi-bowls", name: "Chicken bánh mì-style rice bowls", time: 25, total: 25,
     serves: 4, tags: ["chicken", "quick", "nosugar"],
-    macros: { kcal: 520, protein: 32, fat: 14, carbs: 62, sugars: 10, fibre: 6 },
+    macros: { kcal: 560, protein: 30, fat: 11, carbs: 82, sugars: 3, fibre: 3 },
     ingredients: [
       { n: "Chicken mince", q: "500 g", s: "fishmeat" },
       { n: "Jasmine or brown rice", q: "2 cups", s: "pantry" },
@@ -582,7 +582,7 @@ export const RECIPES = [
   {
     id: "mushroom-barley", name: "Mushroom and barley one-pot", time: 15, total: 45,
     serves: 4, tags: ["veg", "batch", "oven", "nosugar"],
-    macros: { kcal: 420, protein: 16, fat: 14, carbs: 58, sugars: 6, fibre: 10 },
+    macros: { kcal: 480, protein: 20, fat: 16, carbs: 60, sugars: 4, fibre: 15 },
     ingredients: [
       { n: "Mushrooms", q: "600 g", s: "produce" },
       { n: "Pearl barley", q: "1.5 cups", s: "pantry" },
@@ -607,7 +607,7 @@ export const RECIPES = [
   {
     id: "keto-salmon-greens", name: "Lemon-butter salmon with garlicky greens", time: 15, total: 20,
     serves: 4, tags: ["fish", "keto", "quick", "kidsafe", "nosugar"], netCarbs: 6,
-    macros: { kcal: 480, protein: 36, fat: 34, carbs: 6, sugars: 3, fibre: 3 },
+    macros: { kcal: 490, protein: 34, fat: 36, carbs: 5, sugars: 2, fibre: 4 },
     ingredients: [
       { n: "Salmon fillets", q: "4", s: "fishmeat" },
       { n: "Broccolini", q: "2 bunches", s: "produce" },
@@ -629,7 +629,7 @@ export const RECIPES = [
   {
     id: "keto-butter-chicken", name: "Butter chicken with cauliflower rice", time: 25, total: 35,
     serves: 5, tags: ["chicken", "keto", "batch", "kidsafe", "gf", "nosugar"], netCarbs: 10,
-    macros: { kcal: 560, protein: 38, fat: 40, carbs: 10, sugars: 6, fibre: 4 },
+    macros: { kcal: 610, protein: 35, fat: 48, carbs: 9, sugars: 7, fibre: 4 },
     ingredients: [
       { n: "Chicken thigh fillets", q: "800 g", s: "fishmeat" },
       { n: "Cauliflower", q: "1 large head", s: "produce" },
@@ -651,8 +651,8 @@ export const RECIPES = [
   },
   {
     id: "keto-mititei", name: "Mititei-style patties with cabbage salad", time: 25, total: 25,
-    serves: 4, tags: ["keto", "romanian", "quick", "nosugar"], netCarbs: 7,
-    macros: { kcal: 520, protein: 36, fat: 36, carbs: 7, sugars: 4, fibre: 3 },
+    serves: 4, tags: ["keto", "romanian", "quick", "nosugar"], netCarbs: 5,
+    macros: { kcal: 600, protein: 34, fat: 49, carbs: 5, sugars: 4, fibre: 3 },
     ingredients: [
       { n: "Beef mince", q: "500 g", s: "fishmeat" },
       { n: "Pork mince", q: "250 g", s: "fishmeat" },
@@ -673,8 +673,8 @@ export const RECIPES = [
   },
   {
     id: "keto-zoodle-carbonara", name: "Zucchini carbonara", time: 20, total: 20,
-    serves: 4, tags: ["keto", "quick", "veg", "gf", "nosugar"], netCarbs: 8,
-    macros: { kcal: 420, protein: 22, fat: 32, carbs: 8, sugars: 6, fibre: 3 },
+    serves: 4, tags: ["keto", "quick", "veg", "gf", "nosugar"], netCarbs: 6,
+    macros: { kcal: 360, protein: 21, fat: 28, carbs: 6, sugars: 4, fibre: 3 },
     ingredients: [
       { n: "Zucchini", q: "5 large", s: "produce" },
       { n: "Eggs", q: "3", s: "fridge" },
@@ -693,8 +693,8 @@ export const RECIPES = [
   },
   {
     id: "keto-pork-cabbage", name: "Pork and caraway cabbage skillet", time: 20, total: 35,
-    serves: 4, tags: ["keto", "romanian", "batch", "gf", "nosugar"], netCarbs: 9,
-    macros: { kcal: 520, protein: 34, fat: 36, carbs: 9, sugars: 6, fibre: 4 },
+    serves: 4, tags: ["keto", "romanian", "batch", "gf", "nosugar"], netCarbs: 13,
+    macros: { kcal: 580, protein: 34, fat: 42, carbs: 13, sugars: 10, fibre: 6 },
     ingredients: [
       { n: "Pork shoulder or scotch, diced", q: "700 g", s: "fishmeat" },
       { n: "White cabbage", q: "1 head", s: "produce" },
@@ -715,7 +715,7 @@ export const RECIPES = [
   {
     id: "keto-lettuce-tacos", name: "Beef lettuce-cup tacos", time: 20, total: 20,
     serves: 4, tags: ["keto", "quick", "kidsafe", "gf", "nosugar"], netCarbs: 8,
-    macros: { kcal: 520, protein: 32, fat: 38, carbs: 8, sugars: 5, fibre: 5 },
+    macros: { kcal: 690, protein: 37, fat: 56, carbs: 8, sugars: 5, fibre: 7 },
     ingredients: [
       { n: "Beef mince", q: "600 g", s: "fishmeat" },
       { n: "Baby cos lettuce", q: "3 heads", s: "produce" },
@@ -737,8 +737,8 @@ export const RECIPES = [
   },
   {
     id: "keto-mushroom-soup", name: "Creamy mushroom and thyme soup", time: 20, total: 35,
-    serves: 5, tags: ["keto", "veg", "batch", "gf", "nosugar"], netCarbs: 8,
-    macros: { kcal: 330, protein: 10, fat: 28, carbs: 8, sugars: 5, fibre: 3 },
+    serves: 5, tags: ["keto", "veg", "batch", "gf", "nosugar"], netCarbs: 6,
+    macros: { kcal: 310, protein: 7, fat: 29, carbs: 6, sugars: 4, fibre: 3 },
     ingredients: [
       { n: "Mushrooms", q: "700 g", s: "produce" },
       { n: "Leek", q: "1", s: "produce" },
@@ -758,8 +758,8 @@ export const RECIPES = [
   },
   {
     id: "keto-eggplant-bake", name: "Eggplant, ricotta and basil bake", time: 25, total: 55,
-    serves: 5, tags: ["keto", "veg", "oven", "batch", "nosugar"], netCarbs: 11,
-    macros: { kcal: 420, protein: 22, fat: 28, carbs: 11, sugars: 8, fibre: 6 },
+    serves: 5, tags: ["keto", "veg", "oven", "batch", "nosugar"], netCarbs: 18,
+    macros: { kcal: 470, protein: 25, fat: 31, carbs: 18, sugars: 12, fibre: 7 },
     ingredients: [
       { n: "Eggplants", q: "3", s: "produce" },
       { n: "Ricotta", q: "400 g", s: "fridge" },
@@ -782,7 +782,7 @@ export const RECIPES = [
   {
     id: "keto-cobb", name: "Chicken cobb salad with soft eggs", time: 20, total: 20,
     serves: 4, tags: ["keto", "quick", "chicken", "gf", "nosugar"], netCarbs: 7,
-    macros: { kcal: 520, protein: 40, fat: 34, carbs: 7, sugars: 4, fibre: 5 },
+    macros: { kcal: 540, protein: 41, fat: 37, carbs: 6, sugars: 4, fibre: 6 },
     ingredients: [
       { n: "Chicken breast", q: "500 g", s: "fishmeat" },
       { n: "Eggs", q: "4", s: "fridge" },
@@ -803,8 +803,8 @@ export const RECIPES = [
   },
   {
     id: "keto-fish-parcels-lc", name: "Fish parcels with fennel and olives", time: 15, total: 30,
-    serves: 4, tags: ["keto", "fish", "oven", "quick", "gf", "nosugar"], netCarbs: 6,
-    macros: { kcal: 350, protein: 30, fat: 22, carbs: 6, sugars: 3, fibre: 3 },
+    serves: 4, tags: ["keto", "fish", "oven", "quick", "gf", "nosugar"], netCarbs: 4,
+    macros: { kcal: 290, protein: 33, fat: 15, carbs: 4, sugars: 3, fibre: 3 },
     ingredients: [
       { n: "White fish fillets", q: "4", s: "fishmeat" },
       { n: "Fennel bulb", q: "1", s: "produce" },
