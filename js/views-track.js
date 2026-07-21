@@ -308,17 +308,18 @@ export function renderMore(main, navigate) {
       el("p", { class: "one-liner" }, sub),
     );
   main.replaceChildren(
-    el("div", { class: "page-head" }, el("h1", {}, "More")),
+    el("div", { class: "page-head" }, el("h1", {}, "More"),
+      el("p", {}, "Everything else the map holds, most used first.")),
     item("#/counsel", "The counsel", "Strategy for hard situations: with a child, a partner, at work. The wisest sequence, with the words.", "heart"),
-    item("#/speak", "Speak with impact", "Eight lessons in being heard: structure, story, silence, honest influence.", "mic"),
+    item("#/speak", "Speak with impact", "Eight lessons in being heard, practised aloud and kept in your journal.", "mic"),
     item("#/learn", "Learn: the why", "Every rule with its source: the method, the five voices, Dr Li\u2019s table, the evidence cards.", "learn"),
     item("#/journal", "Journal", "Photos, voice notes and words, kept for the future you.", "camera"),
     item("#/capsule", "The capsule", "Letters sealed for later: your voice, kept for the people you love.", "mail"),
     item("#/fasting", "Fasting", "Gentle eating windows, honest safety, a timer that never nags.", "hourglass"),
-    item("#/signals", "Signals", "Glucose, ketones and labs, charted kindly. GKI and Dr Boz ratio included.", "pulse"),
-    item("#/care", "Care calendar", "Appointments, check-ups and your question list for the doctor. Private, optional PIN.", "lock"),
-    item("#/settings", "Settings and data", "Way of eating, exclusions, household, backup, and the promises this app makes."),
+    item("#/signals", "Signals", "Glucose, ketones and labs, explained personally with next steps.", "pulse"),
+    item("#/care", "Doctor visits", "Questions ready, one printable brief, the calendar kept. Private, optional PIN.", "steth"),
     item("#/about", "What this app is", "The whole promise on one page, and a way to hand it to someone who needs it.", "heart"),
+    item("#/settings", "Settings and data", "Way of eating, goals, the reading voice, backup, and the promises this app makes."),
     el("div", { class: "card flat" },
       el("h3", {}, "About Harta"),
       el("p", { class: "muted" }, "Built by someone who learned the hard way that the best time to care about your health is before you have to. Everything here follows one idea: know first, then choose."),
@@ -370,6 +371,9 @@ export function renderAbout(main) {
     ["Your numbers, read kindly", "Glucose, ketones and labs charted for patterns, GKI included, and turned into one printable brief for your doctor: ten minutes of consult, twice the value."],
     ["It never turns on you", "No calorie targets, no weight, no streaks, no punishments. Facts when you want them, warnings only where the evidence is real."],
     ["It keeps what matters", "A journal for photos, voice notes and handwritten pages; letters sealed until a chosen date. Your voice, kept for the people you love."],
+    ["It stands beside you in hard moments", "The counsel turns any difficult situation, with a child, a partner, at work, into the wisest sequence the evidence knows, with the words to open it."],
+    ["It teaches you to be heard", "Speak with impact: eight short lessons in structure, story, silence and honest influence, practised aloud and transcribed as you talk."],
+    ["It listens and answers", "Hold the mic and ask: tonight\u2019s dinner, the eating window, the day\u2019s passage. It answers aloud in a voice you choose."],
     ["Private as a drawer", "No account, no cloud, no tracking. Everything lives on your device, which means nothing can be hacked, leaked, sold or fed to an ad machine."],
   ];
   main.replaceChildren(

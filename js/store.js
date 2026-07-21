@@ -15,7 +15,7 @@ const DEFAULT_STATE = {
     kids: 2,
     allergies: [],      // recipe is excluded if any ingredient name matches
     dislikes: [],       // recipe ids the household vetoed at setup
-    busyNights: [],     // ["tue","thu"] nights needing quick or leftover dinners
+    busyNights: [],     // ["tue","thu"] nights that get quick, fresh dinners
     fishOk: true,
     meatOk: true,
     dietPrefs: [],      // any of: "vegan" | "veg" | "gf" | "nosugar" (keto lives in eatingStyle)
@@ -232,23 +232,11 @@ export function generateWeekPlan() {
     return r;
   };
 
-  // 1. Busy nights first: quick recipes, or a leftover slot after a batch night.
+  // 1. Busy nights first: quick, fresh dinners, cooked that evening.
   const busy = DAY_KEYS.filter((d) => p.busyNights.includes(d));
-  const batchDay = DAY_KEYS.find((d) => !p.busyNights.includes(d) && ["sun", "sat", "mon", "wed"].includes(d));
-  let batchRecipe = null;
-  if (busy.length && batchDay) {
-    batchRecipe = claim(pick((r) => r.tags.includes("batch")));
-    if (batchRecipe) days[batchDay] = { recipeId: batchRecipe.id };
-  }
-  let leftoverUsed = false;
   for (const d of busy) {
     if (days[d]) continue;
-    if (batchRecipe && !leftoverUsed && DAY_KEYS.indexOf(d) > DAY_KEYS.indexOf(batchDay)) {
-      days[d] = { recipeId: batchRecipe.id, leftover: true };
-      leftoverUsed = true;
-    } else {
-      days[d] = { recipeId: claim(pick((r) => r.total <= 25))?.id || null };
-    }
+    days[d] = { recipeId: claim(pick((r) => r.total <= 25))?.id || null };
   }
 
   // 2. Fill the rest.
@@ -505,6 +493,17 @@ export function mealResponseSummary() {
   if (!pre.length || !post.length) return null;
   const avg = (a) => a.reduce((x, y) => x + y.v, 0) / a.length;
   return { n: Math.min(pre.length, post.length), rise: Math.round((avg(post) - avg(pre)) * 10) / 10 };
+}
+
+// which defence systems a recipe feeds, matched from the full Li table
+export function defenceProfile(r) {
+  const ing = r.ingredients.map((i) => i.n.toLowerCase()).join(" ");
+  // olive oil, citrus and garlic live in nearly every recipe here; counting them
+  // would make the star meaningless, so the badge is earned by the rarer defenders
+  const COMMON = ["Extra-virgin olive oil", "Citrus", "Garlic, especially aged"];
+  return Object.keys(LI_FOOD_KEYS)
+    .filter((f) => !COMMON.includes(f))
+    .filter((f) => (LI_FOOD_KEYS[f] || []).some((k) => k && ing.includes(k)));
 }
 
 // which recipes carry a loved defence food (matched on ingredient names)

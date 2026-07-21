@@ -258,7 +258,7 @@ export function renderRecharge(main, navigate) {
   })();
 
   // the doors: the whole app visible in one glance, like a well-set table
-  const door = (hash, ic, label, sub) => el("button", { class: "door", onclick: () => hash === "breathe" ? ring.scrollIntoView({ behavior: "smooth", block: "center" }) : navigate(hash) },
+  const door = (hash, ic, label, sub) => el("button", { class: "door", onclick: () => hash === "breathe" ? ring.scrollIntoView({ behavior: "smooth", block: "center" }) : hash === "talk" ? openTalk() : navigate(hash) },
     icon(ic, 26), el("span", { class: "door-label" }, label), el("span", { class: "door-sub" }, sub));
   const doorsGrid = el("div", { class: "card flat", style: "padding:0.8rem" },
     el("div", { class: "door-grid" },
@@ -270,6 +270,10 @@ export function renderRecharge(main, navigate) {
       door("#/speak", "mic", "Speak", "and be heard"),
       door("#/journal", "camera", "Journal", "photos and voice"),
       door("#/capsule", "mail", "Letters", "for the future"),
+      door("#/care", "steth", "Doctor visits", "arrive prepared"),
+      door("#/learn", "learn", "Learn", "every why, sourced"),
+      door("talk", "chat", "Talk", "ask by voice"),
+      door("#/settings", "more", "Settings", "yours to shape"),
     ),
   );
 

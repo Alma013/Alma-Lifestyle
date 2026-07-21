@@ -4,7 +4,7 @@ import { el, icon, openModal, closeModal, toast } from "./ui.js";
 import { RECIPES, SECTIONS, HABITS, NUDGES } from "./data.js";
 import { passageForToday, PROMPTS } from "./data2.js";
 import {
-  bodyNeeds, eatingWindow, timesCooked, allRecipes, claimMilestone, fmtClock, sumQuantities, localDayOf, greeting, displayGlucose, eligibleRecipes,
+  bodyNeeds, eatingWindow, timesCooked, allRecipes, defenceProfile, LI_FOOD_KEYS, claimMilestone, fmtClock, sumQuantities, localDayOf, greeting, displayGlucose, eligibleRecipes,
   store, DAY_KEYS, DAY_NAMES, todayISO, dayKeyToday, dateOfDayKey, fmtDay,
   recipeById, startNewWeek, swapDay, groceryList, toggleHabit,
 } from "./store.js";
@@ -91,7 +91,7 @@ export function renderOnboarding(main, navigate) {
     });
     return el("div", {},
       el("h2", {}, "Which nights are rushed?"),
-      el("p", { class: "muted" }, "Sport, late work, whatever makes cooking hard. Those nights get 15-minute dinners or planned leftovers. A plan that ignores your real week is a plan that fails by Thursday."),
+      el("p", { class: "muted" }, "Sport, late work, whatever makes cooking hard. Those nights get quick, fresh dinners: fifteen minutes of your hands, cooked that evening. A plan that ignores your real week is a plan that fails by Thursday."),
       el("div", { class: "chip-row" }, chips.map(([, c]) => c)),
       el("button", {
         class: "btn", style: "width:100%",
@@ -428,7 +428,7 @@ export function renderPlan(main, navigate) {
     el("div", { class: "page-head" },
       el("span", { class: "eyebrow" }, "Week of " + fmtDay(s.week.start)),
       el("h1", {}, "The meal plan"),
-      el("p", {}, "Whole food, family sized, built around your rushed nights. Drag a dinner onto another day, or use the arrows; swap anything."),
+      el("p", {}, "Fresh, whole food, family sized, built around your rushed nights. Drag a dinner onto another day, or use the arrows; swap anything."),
     ),
     ...(poolWarning ? [poolWarning] : []),
     needsCard,
@@ -469,7 +469,8 @@ export function renderGroceries(main, navigate) {
         });
         const row = el("div", { class: "gitem" + (checked ? " done" : "") },
           box,
-          el("label", { for: "g-" + item.key, title: "For: " + item.recipes.join(", ") }, item.n,
+          el("label", { for: "g-" + item.key, title: "For: " + item.recipes.join(", ") },
+            item.n + (Object.values(LI_FOOD_KEYS).some((ks) => ks.some((k) => k && item.n.toLowerCase().includes(k))) ? " \u2726" : ""),
             item.pantry ? el("span", {}, " ", el("span", { class: "pantry-note" }, "check pantry")) : null),
           el("span", { class: "q" }, sumQuantities(item.qs)),
         );
@@ -492,7 +493,7 @@ export function renderGroceries(main, navigate) {
     el("div", { class: "page-head" },
       el("span", { class: "eyebrow" }, "Week of " + fmtDay(s.week.start)),
       el("h1", {}, "Groceries"),
-      el("p", {}, "Ordered the way supermarkets are. Pantry staples are flagged so you buy them once, not weekly."),
+      el("p", {}, "Ordered the way supermarkets are. Pantry staples are flagged so you buy them once, not weekly. \u2726 marks foods from Dr Li\u2019s defence table: the ones quietly working for you."),
     ),
     el("div", { class: "card" }, ...secEls.length ? secEls : [el("p", { class: "muted" }, "Plan some dinners first and the list builds itself.")]),
     el("div", { class: "card flat" },
@@ -676,10 +677,10 @@ function addFromLinkModal(main, mode = "link") {
 export function renderRecipes(main) {
   const s = store.get();
   let activeTag = null;
-  const TAGS = [["breakfast", "Breakfasts"], ["lunch", "Lunches"], ["quick", "Quick: 25 min of your hands or less"], ["kidsafe", "Kid friendly"], ["veg", "Vegetarian"], ["vegan", "Vegan"], ["gf", "Gluten free"], ["keto", "Ketogenic"], ["nosugar", "No added sugar"], ["fish", "Fish"], ["legume", "Legumes"], ["batch", "Batch and freeze"], ["romanian", "Romanian"], ["custom", "Added by you"]];
+  const TAGS = [["defence", "\u2726 Dr Li\u2019s defence foods"], ["breakfast", "Breakfasts"], ["lunch", "Lunches"], ["quick", "Quick: 25 min of your hands or less"], ["kidsafe", "Kid friendly"], ["veg", "Vegetarian"], ["vegan", "Vegan"], ["gf", "Gluten free"], ["keto", "Ketogenic"], ["nosugar", "No added sugar"], ["fish", "Fish"], ["legume", "Legumes"], ["batch", "Batch and freeze"], ["romanian", "Romanian"], ["custom", "Added by you"]];
 
   function paint() {
-    const list = allRecipes().filter((r) => !activeTag || r.tags.includes(activeTag));
+    const list = allRecipes().filter((r) => !activeTag || (activeTag === "defence" ? defenceProfile(r).length >= 3 : r.tags.includes(activeTag)));
     main.replaceChildren(
       el("div", { class: "page-head" },
         el("span", { class: "eyebrow" }, `${allRecipes().length} recipes`),
@@ -699,7 +700,7 @@ export function renderRecipes(main) {
       el("div", { class: "recipe-grid" },
         list.map((r) =>
           el("button", { class: "recipe-card", onclick: () => openRecipe(r) },
-            el("span", { class: "rname" }, s.mealMemory[r.id] === "loved" ? "♥ " : "", r.name),
+            el("span", { class: "rname" }, s.mealMemory[r.id] === "loved" ? "♥ " : "", defenceProfile(r).length >= 3 ? "\u2726 " : "", r.name),
             el("span", { class: "rmeta" }, `${r.total} min · serves ${r.serves}` + (r.netCarbs ? ` · ~${r.netCarbs} g` : "")),
           ))),
     );
@@ -747,6 +748,12 @@ export function openRecipe(r) {
       const since = store.get().mealMemoryDates?.[r.id];
       return el("p", { class: "tiny", style: "font-style:italic;margin:-0.2rem 0 0.6rem" },
         `It has fed the table ${n === 2 ? "twice" : n + " times"}` + (since ? `, loved since ${fmtDay(since)}` : "") + ".");
+    })(),
+    (() => {
+      const foods = defenceProfile(r);
+      if (foods.length < 3) return null;
+      return el("p", { class: "tiny", style: "margin:-0.2rem 0 0.6rem" },
+        "\u2726 Feeds the body\u2019s defences (Dr Li\u2019s table): " + foods.slice(0, 5).join(", ") + ".");
     })(),
     r.macros && el("p", { class: "tiny", style: "margin:-0.2rem 0 0.8rem" },
       `Per serve, approximately: ${Math.round(r.macros.kcal * 4.184 / 10) * 10} kJ (${r.macros.kcal} kcal) · protein ${r.macros.protein} g · fat ${r.macros.fat} g · carbs ${r.macros.carbs} g (sugars ${r.macros.sugars} g) · fibre ${r.macros.fibre} g. Computed from the listed quantities against published food-composition data (AFCD and USDA); rounded, a guide rather than a lab result.`),
