@@ -567,12 +567,25 @@ textarea { min-height: 4.6rem; resize: vertical; }
   * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; animation-delay: 0ms !important; }
 }
 
-/* print: grocery list, and the doctor brief when its modal is open */
+/* print: grocery list, day sheet and doctor brief.
+   Paper is always black on white, whatever theme the screen wears:
+   every variable the content uses is overridden here. */
 @media print {
-  .tabbar, .sidebar, .btn, .link { display: none !important; }
-  body { background: #fff; color: #222; }
+  :root, :root[data-theme="dark"], :root[data-theme="light"] {
+    --bg: #fff; --bg-deep: #fff; --surface: #fff; --surface-2: #fff; --surface-3: #fff;
+    --ink: #111; --ink-2: #333; --ink-3: #555;
+    --line: #999; --line-soft: #ccc;
+    --accent: #111; --accent-strong: #111; --accent-soft: #fff;
+    --warm: #333; --warm-soft: #fff; --amber: #333; --amber-soft: #fff;
+    --chart-line: #111; --shadow: none;
+  }
+  .tabbar, .sidebar, .btn, .link, .back-btn { display: none !important; }
+  body { background: #fff; color: #111; }
   body::after { display: none; }
   .card { box-shadow: none; border-color: #ccc; background: #fff; }
+  .modal { background: #fff !important; color: #111; border: none; }
+  .notice { background: #fff; border-left-color: #555; }
+  .tag { background: #eee; color: #333; }
   body:has(#doctor-brief) #app, body:has(#day-sheet) #app, body:has(#doctor-brief) #toast-root, body:has(#day-sheet) #toast-root { display: none !important; }
   body:has(#doctor-brief) .modal-backdrop, body:has(#day-sheet) .modal-backdrop { position: static; background: #fff; display: block; }
   body:has(#doctor-brief) .modal, body:has(#day-sheet) .modal { max-height: none; overflow: visible; border: none; box-shadow: none; }
