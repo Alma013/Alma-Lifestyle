@@ -31,7 +31,7 @@ export function renderJournal(main, navigate) {
 
   async function paintGrid() {
     blobUrls.forEach((u) => URL.revokeObjectURL(u)); blobUrls = [];
-    const entries = await listJournalEntries(120);
+    const entries = (await listJournalEntries(160)).filter((e) => !(e.tags || []).includes("capsule-media")).slice(0, 120);
     if (!entries.length) {
       grid.replaceChildren(el("p", { class: "muted" }, "Nothing here yet. The first photo of a meal you were proud of is a fine beginning."));
       return;
@@ -123,7 +123,7 @@ export function renderJournal(main, navigate) {
     } catch {
       toast("Microphone permission was declined");
     }
-  } }, recBtnLabel);
+  } }, icon("mic", 16), recBtnLabel);
 
   main.replaceChildren(
     el("div", { class: "page-head" },
@@ -204,12 +204,24 @@ export function renderCapsule(main, navigate) {
               ? el("span", { class: "tiny" }, "It waits. That is the point.")
               : el("button", { class: "btn small" + (c.opened ? " ghost" : ""), onclick: () => {
                   if (!c.opened) store.mutate((st) => { const x = st.capsules.find((y) => y.id === c.id); if (x) x.opened = today; });
-                  openModal(
+                  const modal = openModal(
                     el("span", { class: "tag green" }, "For " + c.to),
                     el("h2", {}, c.title),
                     el("p", { class: "tiny" }, "Written " + fmtDay(c.created)),
-                    el("p", { style: "white-space:pre-wrap;margin-top:0.8rem" }, c.body),
+                    c.body ? el("p", { style: "white-space:pre-wrap;margin-top:0.8rem" }, c.body) : null,
+                    el("div", { id: "capsule-media-slot" }),
                   );
+                  (async () => {
+                    const slot = modal.querySelector("#capsule-media-slot");
+                    for (const m of c.media || []) {
+                      const e = await getJournalEntry(m.id);
+                      if (!e || !e.blob) continue;
+                      const url = URL.createObjectURL(e.blob);
+                      blobUrls.push(url);
+                      if (e.type === "photo") slot.append(el("img", { src: url, style: "width:100%;border-radius:12px;margin-top:0.8rem", alt: "The letter, photographed" }));
+                      else slot.append(el("audio", { controls: true, src: url, style: "width:100%;margin-top:0.8rem" }));
+                    }
+                  })();
                   renderCapsule(main, navigate);
                 } }, c.opened ? "Read again" : "Open now"),
           ),
@@ -234,23 +246,76 @@ export function renderCapsule(main, navigate) {
 function writeCapsule(after) {
   const to = el("input", { type: "text", placeholder: "Myself, one year on · My children · Us" });
   const title = el("input", { type: "text", placeholder: "A title the future will recognise" });
-  const body = el("textarea", { placeholder: "Write as if they are in the room.", style: "min-height:9rem" });
+  const body = el("textarea", { placeholder: "Write as if they are in the room. Or attach the letter below: handwritten, spoken, or both.", style: "min-height:7rem" });
   const openOn = el("input", { type: "date", min: todayISO() });
+  const media = []; // { id, type, label } saved to the journal store, tagged capsule-media
+  const mediaList = el("div", { class: "chip-row", style: "margin:0.3rem 0 0" });
+  const paintMedia = () => mediaList.replaceChildren(
+    ...media.map((m) => el("span", { class: "chip on" }, m.type === "photo" ? "A photographed page" : m.label || "A recording")));
+
+  const photoInput = el("input", { type: "file", accept: "image/*", capture: "environment", style: "display:none" });
+  photoInput.addEventListener("change", async () => {
+    const f = photoInput.files[0]; if (!f) return;
+    const id = await addJournalEntry({ type: "photo", blob: f, text: "", tags: ["capsule-media"] });
+    media.push({ id, type: "photo" }); paintMedia(); toast("The page is attached");
+  });
+  const audioInput = el("input", { type: "file", accept: "audio/*", style: "display:none" });
+  audioInput.addEventListener("change", async () => {
+    const f = audioInput.files[0]; if (!f) return;
+    const id = await addJournalEntry({ type: "audio", blob: f, text: "", tags: ["capsule-media"] });
+    media.push({ id, type: "audio", label: "An uploaded recording" }); paintMedia(); toast("The recording is attached");
+  });
+
+  let rec = null, recChunks = [];
+  const recLabel = el("span", {}, "Record a message");
+  const recBtn = el("button", { class: "btn ghost small", onclick: async () => {
+    if (rec && rec.state === "recording") { rec.stop(); return; }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      recChunks = [];
+      rec = new MediaRecorder(stream);
+      rec.ondataavailable = (e) => recChunks.push(e.data);
+      rec.onstop = async () => {
+        stream.getTracks().forEach((t) => t.stop());
+        const blob = new Blob(recChunks, { type: rec.mimeType || "audio/webm" });
+        const id = await addJournalEntry({ type: "audio", blob, text: "", tags: ["capsule-media"] });
+        media.push({ id, type: "audio", label: "A spoken message" });
+        recLabel.textContent = "Record a message";
+        recBtn.classList.remove("danger");
+        paintMedia(); toast("Your voice is sealed in");
+      };
+      rec.start();
+      recLabel.replaceChildren(el("span", { class: "record-dot" }), " Recording… tap to keep");
+      recBtn.classList.add("danger");
+    } catch { toast("Microphone permission was declined"); }
+  } }, icon("mic", 15), recLabel);
+
   openModal(
+    { onClose: () => { if (rec && rec.state === "recording") { try { rec.stop(); } catch {} } } },
     el("h2", {}, "A letter for later"),
     el("div", { class: "field" }, el("label", {}, "For"), to),
     el("div", { class: "field" }, el("label", {}, "Title"), title),
     el("div", { class: "field" }, el("label", {}, "The letter"), body),
+    el("div", { class: "field" },
+      el("label", {}, "Attach the letter itself"),
+      el("div", { class: "btn-row" },
+        el("button", { class: "btn ghost small", onclick: () => photoInput.click() }, icon("camera", 15), "Photograph the page"),
+        recBtn,
+        el("button", { class: "btn ghost small", onclick: () => audioInput.click() }, "Upload a recording"),
+        photoInput, audioInput,
+      ),
+      mediaList,
+      el("div", { class: "hint" }, "Handwriting and voice carry more of you than type ever will. Attach either, or both.")),
     el("div", { class: "field" }, el("label", {}, "Sealed until"), openOn,
       el("div", { class: "hint" }, "Leave empty to keep it open from day one.")),
     el("div", { class: "btn-row" },
       el("button", { class: "btn", onclick: () => {
-        if (!to.value.trim() || !body.value.trim()) { toast("It needs a person and some words"); return; }
+        if (!to.value.trim() || (!body.value.trim() && !media.length)) { toast("It needs a person, and either words or an attachment"); return; }
         store.mutate((s) => {
           s.capsules.unshift({
             id: uid(), to: to.value.trim(),
             title: title.value.trim() || "A letter",
-            body: body.value, openOn: openOn.value || null,
+            body: body.value, media, openOn: openOn.value || null,
             created: todayISO(), opened: null,
           });
         });

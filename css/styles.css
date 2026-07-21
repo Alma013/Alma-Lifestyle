@@ -281,6 +281,25 @@ textarea { min-height: 4.6rem; resize: vertical; }
 .breath-ring.inhale { transform: scale(1); box-shadow: 0 0 60px rgba(128, 211, 44, 0.18); }
 .breath-ring.hold { transform: scale(1); }
 .breath-ring.exhale { transform: scale(0.72); box-shadow: none; }
+.breath-ring.sky {
+  position: relative; overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 42%, var(--accent-soft), transparent 62%),
+    radial-gradient(circle at 30% 70%, rgba(96, 116, 156, 0.12), transparent 55%),
+    radial-gradient(circle at 50% 50%, #100E14 0%, #17130F 78%);
+  border-color: rgba(234, 223, 200, 0.18);
+}
+.breath-stars { position: absolute; inset: 0; animation: star-drift 90s linear infinite; }
+.breath-stars i {
+  position: absolute; border-radius: 50%;
+  background: var(--cream);
+  box-shadow: 0 0 4px rgba(234, 223, 200, 0.6);
+  animation: twinkle 3s ease-in-out infinite alternate;
+}
+@keyframes star-drift { to { transform: rotate(360deg); } }
+@keyframes twinkle { from { opacity: 0.25; } to { opacity: 0.95; } }
+.breath-ring.sky .breath-word { position: relative; z-index: 1; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.55); color: var(--cream); }
+
 .breath-word { font-family: var(--font-head); font-size: 1.3rem; color: var(--ink); }
 .breath-count { font-size: 0.85rem; color: var(--ink-3); margin-top: 0.6rem; min-height: 1.2em; }
 

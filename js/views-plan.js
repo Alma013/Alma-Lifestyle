@@ -3,7 +3,7 @@
 import { el, icon, openModal, closeModal, toast } from "./ui.js";
 import { RECIPES, SECTIONS, HABITS, NUDGES } from "./data.js";
 import {
-  bodyNeeds, eatingWindow, timesCooked, claimMilestone, fmtClock, sumQuantities, localDayOf, greeting, displayGlucose, eligibleRecipes,
+  bodyNeeds, eatingWindow, timesCooked, allRecipes, claimMilestone, fmtClock, sumQuantities, localDayOf, greeting, displayGlucose, eligibleRecipes,
   store, DAY_KEYS, DAY_NAMES, todayISO, dayKeyToday, dateOfDayKey, fmtDay,
   recipeById, startNewWeek, swapDay, groceryList, toggleHabit,
 } from "./store.js";
@@ -419,18 +419,143 @@ export function renderGroceries(main, navigate) {
 }
 
 // ---------- recipes ----------
+
+// ---------- recipes from a link ----------
+function guessSection(line) {
+  const l = line.toLowerCase();
+  if (/(chicken|beef|pork|lamb|fish|salmon|tuna|prawn|mince|bacon|turkey)/.test(l)) return "fishmeat";
+  if (/(milk|cream|butter|cheese|yoghurt|yogurt|feta|parmesan|egg)/.test(l)) return "fridge";
+  if (/(frozen)/.test(l)) return "frozen";
+  if (/(bread|tortilla|wrap|bun)/.test(l)) return "bakery";
+  if (/(onion|garlic|tomato|capsicum|carrot|zucchini|spinach|lettuce|broccoli|cabbage|potato|pumpkin|lemon|lime|herb|parsley|dill|basil|mushroom|avocado|cucumber|apple|berry|celery|leek|eggplant)/.test(l)) return "produce";
+  return "pantry";
+}
+function parseISODuration(d) {
+  if (!d || typeof d !== "string") return null;
+  const m = d.match(/PT(?:(\d+)H)?(?:(\d+)M)?/);
+  if (!m) return null;
+  return (Number(m[1] || 0) * 60 + Number(m[2] || 0)) || null;
+}
+function recipeFromJsonLd(doc, url) {
+  const scripts = [...doc.querySelectorAll('script[type="application/ld+json"]')];
+  for (const sc of scripts) {
+    let data; try { data = JSON.parse(sc.textContent); } catch { continue; }
+    const nodes = [];
+    const walk = (x) => { if (!x) return; if (Array.isArray(x)) return x.forEach(walk); nodes.push(x); if (x["@graph"]) walk(x["@graph"]); };
+    walk(data);
+    const rec = nodes.find((n) => String(n["@type"]).includes("Recipe"));
+    if (!rec) continue;
+    const steps = [];
+    const walkSteps = (x) => {
+      if (!x) return;
+      if (Array.isArray(x)) return x.forEach(walkSteps);
+      if (typeof x === "string") steps.push(x);
+      else if (x.text) steps.push(x.text);
+      else if (x.itemListElement) walkSteps(x.itemListElement);
+    };
+    walkSteps(rec.recipeInstructions);
+    const total = parseISODuration(rec.totalTime) || parseISODuration(rec.cookTime) || 30;
+    const serves = parseInt(String(rec.recipeYield || "4").match(/\d+/)?.[0] || "4");
+    return {
+      name: (rec.name || "A recipe from the web").trim(),
+      total, time: Math.min(total, parseISODuration(rec.prepTime) || total),
+      serves: Math.min(12, Math.max(1, serves)),
+      ingredients: (rec.recipeIngredient || []).map((n) => ({ n: String(n).trim(), q: "", s: guessSection(String(n)) })),
+      method: steps.map((x) => String(x).replace(/<[^>]+>/g, "").trim()).filter(Boolean),
+      source: new URL(url).hostname.replace("www.", ""),
+    };
+  }
+  return null;
+}
+function recipeFromPaste(text, url) {
+  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (lines.length < 3) return null;
+  const ingIdx = lines.findIndex((l) => /^ingredients?\b/i.test(l));
+  const methodIdx = lines.findIndex((l) => /^(method|instructions?|directions?|steps)\b/i.test(l));
+  const name = lines[0].slice(0, 90);
+  let ingredients, method;
+  if (ingIdx >= 0 && methodIdx > ingIdx) {
+    ingredients = lines.slice(ingIdx + 1, methodIdx);
+    method = lines.slice(methodIdx + 1);
+  } else {
+    // best effort: lines with a number or unit look like ingredients
+    ingredients = lines.slice(1).filter((l) => /\d|cup|tbsp|tsp|gram|\bg\b|ml|clove|bunch/i.test(l) && l.length < 90);
+    method = lines.slice(1).filter((l) => !ingredients.includes(l) && l.length > 25);
+  }
+  if (!ingredients.length || !method.length) return null;
+  const serves = parseInt(text.match(/serves?\s*(\d+)/i)?.[1] || "4");
+  const total = parseInt(text.match(/(\d+)\s*min/i)?.[1] || "30");
+  return {
+    name, total, time: Math.min(total, 25), serves,
+    ingredients: ingredients.map((n) => ({ n, q: "", s: guessSection(n) })),
+    method,
+    source: url ? new URL(url).hostname.replace("www.", "") : "your paste",
+  };
+}
+function saveCustomRecipe(parsed, main) {
+  const id = "custom-" + Math.random().toString(36).slice(2, 8);
+  store.mutate((s) => {
+    s.customRecipes.push({
+      id, name: parsed.name, time: parsed.time, total: parsed.total, serves: parsed.serves,
+      tags: ["custom"],
+      ingredients: parsed.ingredients, method: parsed.method,
+      why: "Added by you, from " + parsed.source + ". It plans, shops and swaps like every other recipe.",
+      whySource: parsed.source,
+    });
+  });
+  closeModal(); renderRecipes(main);
+  toast("\u201C" + parsed.name + "\u201D is in the kitchen now");
+}
+function addFromLinkModal(main) {
+  const urlInput = el("input", { type: "url", placeholder: "https://\u2026 paste the recipe page" });
+  const status = el("p", { class: "tiny" }, "");
+  const pasteArea = el("textarea", { placeholder: "\u2026or paste the recipe text itself here: title first, then ingredients, then method.", style: "min-height:8rem" });
+  openModal(
+    el("h2", {}, "Add a recipe from a link"),
+    el("p", { class: "muted" }, "Paste a link and Harta will read the recipe straight off the page where the site allows it. Where it does not, paste the text and Harta will shape it."),
+    el("div", { class: "field" }, urlInput),
+    el("div", { class: "btn-row" },
+      el("button", { class: "btn", onclick: async () => {
+        const url = urlInput.value.trim();
+        if (!/^https?:\/\//.test(url)) { toast("A full link, starting with https"); return; }
+        status.textContent = "Reading the page\u2026";
+        try {
+          const res = await fetch(url, { mode: "cors" });
+          const html = await res.text();
+          const doc = new DOMParser().parseFromString(html, "text/html");
+          const parsed = recipeFromJsonLd(doc, url) || recipeFromPaste(doc.body?.innerText || "", url);
+          if (parsed) { saveCustomRecipe(parsed, main); return; }
+          status.textContent = "The page opened but no recipe was found in it. Paste the text below instead.";
+        } catch {
+          status.textContent = "That site does not let apps read it directly (a common privacy setting). Copy the recipe text from the page and paste it below; Harta will do the rest.";
+        }
+      } }, "Read the link"),
+    ),
+    status,
+    el("div", { class: "field" }, pasteArea),
+    el("button", { class: "btn secondary", onclick: () => {
+      const parsed = recipeFromPaste(pasteArea.value, urlInput.value.trim() || null);
+      if (parsed) saveCustomRecipe(parsed, main);
+      else toast("Harta needs a title, some ingredients and a method to work with");
+    } }, "Shape the paste into a recipe"),
+  );
+}
+
 export function renderRecipes(main) {
   const s = store.get();
   let activeTag = null;
-  const TAGS = [["quick", "Quick: 25 min of your hands or less"], ["kidsafe", "Kid friendly"], ["veg", "Vegetarian"], ["vegan", "Vegan"], ["gf", "Gluten free"], ["keto", "Ketogenic"], ["nosugar", "No added sugar"], ["fish", "Fish"], ["legume", "Legumes"], ["batch", "Batch and freeze"], ["romanian", "Romanian"]];
+  const TAGS = [["quick", "Quick: 25 min of your hands or less"], ["kidsafe", "Kid friendly"], ["veg", "Vegetarian"], ["vegan", "Vegan"], ["gf", "Gluten free"], ["keto", "Ketogenic"], ["nosugar", "No added sugar"], ["fish", "Fish"], ["legume", "Legumes"], ["batch", "Batch and freeze"], ["romanian", "Romanian"], ["custom", "Added by you"]];
 
   function paint() {
-    const list = RECIPES.filter((r) => !activeTag || r.tags.includes(activeTag));
+    const list = allRecipes().filter((r) => !activeTag || r.tags.includes(activeTag));
     main.replaceChildren(
       el("div", { class: "page-head" },
-        el("span", { class: "eyebrow" }, `${RECIPES.length} recipes`),
+        el("span", { class: "eyebrow" }, `${allRecipes().length} recipes`),
         el("h1", {}, "The kitchen"),
         el("p", {}, "Every recipe carries its why. Mark what the family loved and the planner learns."),
+      ),
+      el("div", { class: "btn-row", style: "margin-bottom:0.8rem" },
+        el("button", { class: "btn secondary small", onclick: () => addFromLinkModal(main) }, "Add from a link"),
       ),
       el("div", { class: "chip-row" },
         TAGS.map(([t, label]) =>

@@ -39,7 +39,8 @@ const DEFAULT_STATE = {
     readings: [],       // { id, t: ISO datetime, type: "glucose"|"ketone", v: number (glucose always stored mmol/L), ctx: "fasting"|"pre"|"post"|"" , note }
     labs: [],           // { id, date, name, value, unit }
   },
-  capsules: [],         // { id, to, title, body, openOn, created, opened }
+  capsules: [],         // { id, to, title, body, media, openOn, created, opened }
+  customRecipes: [],    // recipes the user added from a link or by paste
   journalIndex: [],     // metadata only; photo/audio blobs live in IndexedDB
   arrivalLast: null,    // ISO date the arrival passage last showed
   voiceOn: false,       // read-aloud with the device's own voice, user's choice
@@ -151,8 +152,11 @@ export function fmtDay(iso) {
 }
 
 // ---------- recipes ----------
+export function allRecipes() {
+  return [...RECIPES, ...(state.customRecipes || [])];
+}
 export function recipeById(id) {
-  return RECIPES.find((r) => r.id === id) || null;
+  return allRecipes().find((r) => r.id === id) || null;
 }
 
 export function activeExclusions() {
@@ -164,7 +168,7 @@ export function activeExclusions() {
 export function eligibleRecipes() {
   const p = state.profile;
   const excluded = activeExclusions();
-  return RECIPES.filter((r) => {
+  return allRecipes().filter((r) => {
     if (state.eatingStyle === "keto" && !r.tags.includes("keto")) return false;
     if (state.eatingStyle === "keto" && state.ketoStrict && ((r.netCarbs || 99) > 8 || !r.tags.includes("nosugar"))) return false;
     for (const pref of p.dietPrefs || []) if (!r.tags.includes(pref)) return false;
