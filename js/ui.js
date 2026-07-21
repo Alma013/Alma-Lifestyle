@@ -45,6 +45,7 @@ const ICON_PATHS = {
   camera: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M8.5 7 10 4.5h4L15.5 7"/><circle cx="12" cy="13" r="3.5"/>',
   mail: '<rect x="3" y="5.5" width="18" height="14" rx="2"/><path d="m3.5 7 8.5 6 8.5-6"/>',
   mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/>',
+  note: '<path d="M9 18.5V5.5l10-2v12"/><circle cx="6.5" cy="18.5" r="2.5"/><circle cx="16.5" cy="15.5" r="2.5"/>',
 };
 
 export function icon(name, size = 24) {

@@ -237,24 +237,23 @@ export function renderRecharge(main, navigate) {
     );
   })();
 
-  const introCard = store.get().introSeen ? null : el("div", { class: "card" },
-    el("div", { class: "card-title-row" }, el("h2", {}, "What Harta can do"),
-      el("button", { class: "link", onclick: () => { store.update({ introSeen: true }); renderRecharge(main, navigate); } }, "Got it")),
-    ...[
-      ["#/", "Recharge here: breathe under the stars, music, tools for hard moments and the achiever's state"],
-      ["#/plan", "Plan the week's meals: dinners, or the whole day, with the grocery list written and summed"],
-      ["#/signals", "Bring in glucose, ketones and labs, and have your numbers explained with next steps"],
-      ["#/fasting", "Keep an eating window with honest safety and a live kitchen clock"],
-      ["#/counsel", "Get strategy for hard situations: a child, a partner, work"],
-      ["#/speak", "Practise speaking with impact, transcribed as you talk"],
-      ["#/journal", "Keep a journal in photos, voice and words, and seal letters for the future"],
-      ["#/care", "Prepare doctor visits: questions ready, one printable brief"],
-    ].map(([h, txt]) => el("p", { class: "muted", style: "margin:0.25rem 0" },
-      el("button", { class: "link", onclick: () => navigate(h) }, txt))),
+  // the doors: the whole app visible in one glance, like a well-set table
+  const door = (hash, ic, label, sub) => el("button", { class: "door", onclick: () => hash === "breathe" ? ring.scrollIntoView({ behavior: "smooth", block: "center" }) : navigate(hash) },
+    icon(ic, 26), el("span", { class: "door-label" }, label), el("span", { class: "door-sub" }, sub));
+  const doorsGrid = el("div", { class: "card flat", style: "padding:0.8rem" },
+    el("div", { class: "door-grid" },
+      door("breathe", "sun", "Breathe", "under the stars"),
+      door("#/plan", "plan", "Meals", "the week, decided"),
+      door("#/signals", "pulse", "My numbers", "explained kindly"),
+      door("#/fasting", "hourglass", "Fasting", "a kitchen clock"),
+      door("#/counsel", "heart", "The counsel", "for hard moments"),
+      door("#/speak", "mic", "Speak", "and be heard"),
+      door("#/journal", "camera", "Journal", "photos and voice"),
+      door("#/capsule", "mail", "Letters", "for the future"),
+    ),
   );
 
   main.replaceChildren(
-    ...(introCard ? [introCard] : []),
     ...(vespersCard ? [vespersCard] : []),
     ...(echoCard ? [echoCard] : []),
     el("div", { class: "page-head" },
@@ -266,6 +265,7 @@ export function renderRecharge(main, navigate) {
         "“" + passage.text + "” · " + passage.ref,
         voiceAvailable() && s.voiceOn ? el("button", { class: "link", style: "margin-left:0.5rem", onclick: () => speak(passage.text + ". " + passage.ref) }, "Listen") : null),
     ),
+    doorsGrid,
     el("div", { class: "card" },
       el("div", { class: "card-title-row" }, el("h2", {}, "Breathe"),
         s.sanctuaryMinutes > 0 ? el("span", { class: "tag green" }, `${s.sanctuaryMinutes} quiet minutes so far`) : null),
