@@ -3,8 +3,9 @@
 
 import { el, icon, toast, openModal, closeModal } from "./ui.js";
 import { store, todayISO, uid, greeting, localDayOf, claimMilestone } from "./store.js";
-import { passageForToday, eveningPassageForToday, PROMPTS, SOUNDSCAPES, STEADY_TECHNIQUES, STEADY_NOTE, ACHIEVER_TECHNIQUES, ACHIEVER_NOTE } from "./data2.js";
-import { speak, stopSpeaking, voiceAvailable } from "./voice.js";
+import { passageForToday, eveningPassageForToday, PROMPTS, SOUNDSCAPES, SOUND_GROUPS, STEADY_TECHNIQUES, STEADY_NOTE, ACHIEVER_TECHNIQUES, ACHIEVER_NOTE } from "./data2.js";
+import { speak, stopSpeaking, voiceAvailable, listenAvailable } from "./voice.js";
+import { openTalk } from "./talk.js";
 import { addJournalEntry } from "./idb.js";
 import { openWhy } from "./views-track.js";
 import { playScape, stopScape, playingId, chime } from "./audio.js";
@@ -72,6 +73,8 @@ export function renderRecharge(main, navigate) {
   const count = el("div", { class: "breath-count" }, "Three minutes is a real reset. One is still real.");
   const howLine = el("p", { class: "tiny center", style: "max-width:26rem;margin:0.5rem auto 0" }, BREATH_PATTERNS[pattern].how);
   const stars = el("div", { class: "breath-stars", "aria-hidden": "true" });
+  const orbit = el("div", { class: "orbit" });
+  stars.append(orbit);
   for (let i = 0; i < 78; i++) {
     const angle = Math.random() * 2 * Math.PI;
     const radius = 18 + Math.random() * 78; // per cent of ring radius
@@ -82,7 +85,7 @@ export function renderRecharge(main, navigate) {
     st.style.width = size + "px"; st.style.height = size + "px";
     st.style.animationDuration = (2.2 + Math.random() * 3.8) + "s";
     st.style.animationDelay = (Math.random() * 3) + "s";
-    stars.append(st);
+    orbit.append(st);
   }
   const ring = el("div", { class: "breath-ring sky" }, stars, word);
 
@@ -240,7 +243,8 @@ export function renderRecharge(main, navigate) {
     el("div", { class: "page-head" },
       el("span", { class: "eyebrow" }, "The sanctuary"),
       el("h1", {}, greet + (s.profile.name ? ", " + s.profile.name : "")),
-      el("p", {}, "Ten quiet minutes that put energy back. Breath first, sound if you want it, one honest line if it comes."),
+      el("p", {}, "Ten quiet minutes that put energy back. Breath first, sound if you want it, one honest line if it comes.",
+        listenAvailable() && voiceAvailable() ? el("button", { class: "link", style: "margin-left:0.5rem", onclick: openTalk }, "Talk to Harta") : null),
       el("p", { class: "tiny", style: "font-family:var(--font-head);font-style:italic;font-size:0.92rem;margin-top:0.5rem" },
         "“" + passage.text + "” · " + passage.ref,
         voiceAvailable() && s.voiceOn ? el("button", { class: "link", style: "margin-left:0.5rem", onclick: () => speak(passage.text + ". " + passage.ref) }, "Listen") : null),
@@ -254,7 +258,10 @@ export function renderRecharge(main, navigate) {
     ),
 el("div", { class: "card" },
       el("h2", {}, "Sound"),
-      el("div", { class: "sound-grid" }, tiles),
+      ...SOUND_GROUPS.map(([gid, glabel]) => el("div", { style: "margin-bottom:0.8rem" },
+        el("h3", { style: "font-family:var(--font-ui);font-size:0.74rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:0.4rem" }, glabel),
+        el("div", { class: "sound-grid" }, tiles.filter((t, i) => SOUNDSCAPES[i].group === gid)),
+      )),
       el("p", { class: "tiny", style: "margin-top:0.7rem" }, el("button", { class: "link", onclick: () => openWhy("sound-calm") }, "Why this works, honestly")),
     ),
     el("div", { class: "card" },

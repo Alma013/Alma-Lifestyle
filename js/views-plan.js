@@ -2,6 +2,7 @@
 
 import { el, icon, openModal, closeModal, toast } from "./ui.js";
 import { RECIPES, SECTIONS, HABITS, NUDGES } from "./data.js";
+import { passageForToday } from "./data2.js";
 import {
   bodyNeeds, eatingWindow, timesCooked, allRecipes, claimMilestone, fmtClock, sumQuantities, localDayOf, greeting, displayGlucose, eligibleRecipes,
   store, DAY_KEYS, DAY_NAMES, todayISO, dayKeyToday, dateOfDayKey, fmtDay,
@@ -115,6 +116,37 @@ export function renderOnboarding(main, navigate) {
   paint();
 }
 
+// a one-page day sheet: the whole day on paper, for the fridge or a screen-free day
+function openDaySheet() {
+  const s = store.get();
+  const dk = dayKeyToday();
+  const slot = s.week?.days[dk] || {};
+  const passage = (function () { try { return passageForToday(todayISO()); } catch { return null; } })();
+  const meal = (id, label) => {
+    const r = id ? recipeById(id) : null;
+    if (!r) return null;
+    return el("div", { style: "margin-bottom:0.7rem" },
+      el("strong", {}, label + ": " + r.name),
+      el("p", { class: "tiny", style: "margin:0.1rem 0" }, r.ingredients.map((i) => i.n + (i.q ? " (" + i.q + ")" : "")).join(", ")),
+      el("ol", { style: "margin:0.2rem 0 0;padding-left:1.2rem;font-size:0.85rem" }, r.method.map((m) => el("li", {}, m))),
+    );
+  };
+  const w = eatingWindow();
+  openModal(
+    el("h2", {}, "Today, on one page"),
+    el("div", { id: "day-sheet" },
+      passage ? el("p", { style: "font-style:italic" }, "\u201C" + passage.text + "\u201D \u00B7 " + passage.ref) : null,
+      meal(slot.bf, "Breakfast"),
+      meal(slot.lunch, "Lunch"),
+      meal(slot.recipeId, "Dinner"),
+      w && w.mode !== "fasting" ? el("p", { class: "tiny" }, w.mode === "open" ? "Kitchen closes " + fmtClock(w.closes) + "." : "Kitchen reopens " + fmtClock(w.opens) + ".") : null,
+      el("p", { class: "tiny" }, "The gentle four: moved \u25A1 \u00B7 slept well \u25A1 \u00B7 ate well \u25A1 \u00B7 water first \u25A1"),
+      el("p", { class: "tiny" }, "Printed from Harta. The phone can stay in the drawer today."),
+    ),
+    el("button", { class: "btn", style: "margin-top:0.8rem", onclick: () => window.print() }, "Print"),
+  );
+}
+
 // ---------- today ----------
 export function renderToday(main, navigate) {
   const s = store.get();
@@ -139,7 +171,10 @@ export function renderToday(main, navigate) {
   main.replaceChildren(
     el("div", { class: "page-head" },
       el("span", { class: "eyebrow" }, new Date().toLocaleDateString("en-AU", { weekday: "long", day: "numeric", month: "long" })),
-      el("h1", { class: "hello" }, `${greet}${s.profile.name ? ", " + s.profile.name : ""}`),
+      el("div", { class: "spread" },
+        el("h1", { class: "hello" }, `${greet}${s.profile.name ? ", " + s.profile.name : ""}`),
+        el("button", { class: "btn ghost small", onclick: () => openDaySheet(), "aria-label": "Print the day" }, icon("print", 15), "Print the day"),
+      ),
     ),
 
     el("div", { class: "card" },
@@ -173,6 +208,18 @@ export function renderToday(main, navigate) {
       el("div", { class: "pulse-grid" }, pulses),
     ),
 
+    ...[(() => {
+      if (!s.planAllMeals) return null;
+      const slot2 = s.week?.days[dk];
+      if (!slot2?.bf && !slot2?.lunch) return null;
+      const bf = slot2.bf ? recipeById(slot2.bf) : null;
+      const lu = slot2.lunch ? recipeById(slot2.lunch) : null;
+      return el("div", { class: "card flat" },
+        el("h3", {}, "The rest of today"),
+        bf ? el("p", { class: "muted", style: "margin:0.15rem 0" }, el("strong", {}, "Breakfast: "), el("button", { class: "link", onclick: () => openRecipe(bf) }, bf.name)) : null,
+        lu ? el("p", { class: "muted", style: "margin:0.15rem 0" }, el("strong", {}, "Lunch: "), el("button", { class: "link", onclick: () => openRecipe(lu) }, lu.name)) : null,
+      );
+    })()].filter(Boolean),
     ...[(() => {
       // a letter is approaching: the most anticipation an app can honestly hold
       const today = todayISO();
@@ -290,11 +337,18 @@ export function renderPlan(main, navigate) {
       dataset: { day: k },
     },
       el("span", { class: "d" }, DAY_NAMES[k].slice(0, 3), el("small", {}, fmtDay(dateOfDayKey(s.week.start, k)))),
-      r
-        ? el("span", {},
-            el("button", { class: "meal-name", onclick: () => openRecipe(r) }, r.name),
-            el("span", { class: "meal-sub" }, slot.leftover ? "Leftovers from the batch pot" : `${r.total} min · serves ${r.serves}` + (store.get().eatingStyle === "keto" && r.netCarbs ? ` · ~${r.netCarbs} g net carbs` : "")))
-        : el("span", { class: "meal-name empty" }, "Nothing planned"),
+      el("span", {},
+        r
+          ? el("span", { style: "display:block" },
+              el("button", { class: "meal-name", onclick: () => openRecipe(r) }, r.name),
+              el("span", { class: "meal-sub", style: "display:block" }, slot.leftover ? "Leftovers from the batch pot" : `${r.total} min · serves ${r.serves}` + (store.get().eatingStyle === "keto" && r.netCarbs ? ` · ~${r.netCarbs} g net carbs` : "")))
+          : el("span", { class: "meal-name empty" }, "Nothing planned"),
+        (slot?.bf || slot?.lunch) ? el("span", { class: "meal-sub", style: "display:block;margin-top:0.2rem" },
+          slot.bf ? el("button", { class: "link", style: "font-size:0.76rem", onclick: () => openRecipe(recipeById(slot.bf)) }, "B: " + (recipeById(slot.bf)?.name || "")) : null,
+          slot.bf && slot.lunch ? "  ·  " : null,
+          slot.lunch ? el("button", { class: "link", style: "font-size:0.76rem", onclick: () => openRecipe(recipeById(slot.lunch)) }, "L: " + (recipeById(slot.lunch)?.name || "")) : null,
+        ) : null,
+      ),
       el("span", { class: "row-actions" },
         el("button", { class: "btn ghost small", "aria-label": "Move " + DAY_NAMES[k] + " dinner earlier", disabled: idx === 0, onclick: () => moveMeal(k, DAY_KEYS[idx - 1]) }, "↑"),
         el("button", { class: "btn ghost small", "aria-label": "Move " + DAY_NAMES[k] + " dinner later", disabled: idx === 6, onclick: () => moveMeal(k, DAY_KEYS[idx + 1]) }, "↓"),
@@ -589,7 +643,7 @@ function addFromLinkModal(main, mode = "link") {
 export function renderRecipes(main) {
   const s = store.get();
   let activeTag = null;
-  const TAGS = [["quick", "Quick: 25 min of your hands or less"], ["kidsafe", "Kid friendly"], ["veg", "Vegetarian"], ["vegan", "Vegan"], ["gf", "Gluten free"], ["keto", "Ketogenic"], ["nosugar", "No added sugar"], ["fish", "Fish"], ["legume", "Legumes"], ["batch", "Batch and freeze"], ["romanian", "Romanian"], ["custom", "Added by you"]];
+  const TAGS = [["breakfast", "Breakfasts"], ["lunch", "Lunches"], ["quick", "Quick: 25 min of your hands or less"], ["kidsafe", "Kid friendly"], ["veg", "Vegetarian"], ["vegan", "Vegan"], ["gf", "Gluten free"], ["keto", "Ketogenic"], ["nosugar", "No added sugar"], ["fish", "Fish"], ["legume", "Legumes"], ["batch", "Batch and freeze"], ["romanian", "Romanian"], ["custom", "Added by you"]];
 
   function paint() {
     const list = allRecipes().filter((r) => !activeTag || r.tags.includes(activeTag));

@@ -21,6 +21,7 @@ const DEFAULT_STATE = {
     dietPrefs: [],      // any of: "vegan" | "veg" | "gf" | "nosugar" (keto lives in eatingStyle)
   },
   eatingStyle: "med",   // "med" (whole-food Mediterranean) | "keto" (adult plates only)
+  planAllMeals: false,  // when true the week also carries breakfasts and lunches
   ketoStrict: false,    // true: dinners under ~7 g net carbs and no added sugar (max ~20 g across the day)
   goal: "health",       // "health" | "weight" | "muscle" | "treatment"
   liFoods: [],          // defence-system foods the household loves (from Dr Li's table)
@@ -165,6 +166,13 @@ export function activeExclusions() {
   return [...state.exclusions.always, ...temp.map((t) => t.name)];
 }
 
+export function mealPool(kind) {
+  const all = eligibleRecipes();
+  if (kind === "breakfast") return all.filter((r) => r.tags.includes("breakfast"));
+  if (kind === "lunch") return all.filter((r) => r.tags.includes("lunch"));
+  return all.filter((r) => !r.tags.includes("breakfast") && !r.tags.includes("lunch"));
+}
+
 export function eligibleRecipes() {
   const p = state.profile;
   const excluded = activeExclusions();
@@ -186,7 +194,7 @@ export function eligibleRecipes() {
 // Deterministic-ish variety: score each eligible recipe against what the week needs,
 // with gentle randomness so two weeks never look identical.
 export function generateWeekPlan() {
-  const pool = eligibleRecipes();
+  const pool = mealPool("dinner");
   const p = state.profile;
   const recentIds = new Set(
     (state.weekHistory[0] ? Object.values(state.weekHistory[0].days) : [])
@@ -247,6 +255,15 @@ export function generateWeekPlan() {
     days[d] = { recipeId: claim(pick())?.id || null };
   }
 
+  if (state.planAllMeals) {
+    const bfs = mealPool("breakfast");
+    const lunches = mealPool("lunch");
+    DAY_KEYS.forEach((d, i) => {
+      if (!days[d]) days[d] = { recipeId: null };
+      if (bfs.length) days[d].bf = bfs[i % bfs.length].id;
+      if (lunches.length) days[d].lunch = lunches[i % lunches.length].id;
+    });
+  }
   return { start: mondayOf(), days, checked: {}, extras: [] };
 }
 
@@ -305,12 +322,18 @@ export function groceryList() {
   const seen = new Map(); // name -> item (merge duplicates)
   const countedRecipes = new Set();
 
+  const mealIds = [];
   for (const d of DAY_KEYS) {
     const slot = w.days[d];
-    if (!slot?.recipeId || slot.leftover) continue;
-    if (countedRecipes.has(slot.recipeId)) continue;
-    countedRecipes.add(slot.recipeId);
-    const r = recipeById(slot.recipeId);
+    if (!slot) continue;
+    if (slot.recipeId && !slot.leftover) mealIds.push(slot.recipeId);
+    if (slot.bf) mealIds.push(slot.bf);
+    if (slot.lunch) mealIds.push(slot.lunch);
+  }
+  for (const id of mealIds) {
+    if (countedRecipes.has(id)) continue;
+    countedRecipes.add(id);
+    const r = recipeById(id);
     if (!r) continue;
     for (const ing of r.ingredients) {
       const key = ing.n.toLowerCase();

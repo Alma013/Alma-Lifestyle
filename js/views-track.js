@@ -4,7 +4,7 @@ import { el, icon, openModal, closeModal, toast, sparkline } from "./ui.js";
 import { WHY_CARDS, NUDGES, HABITS } from "./data.js";
 import { WHY_CARDS_V2, EXPERTS, METHOD_CARD, LI_TABLE } from "./data2.js";
 import { exportJournal, importJournal } from "./idb.js";
-import { voiceAvailable, speak, stopSpeaking } from "./voice.js";
+import { voiceAvailable, speak, stopSpeaking, rankedVoices, setVoiceByName } from "./voice.js";
 import {
   store, eligibleRecipes, recipesForLiFoods, DAY_KEYS, DAY_NAMES, todayISO, mondayOf, dateOfDayKey, fmtDay,
   weekHabitSummary, toggleHabit, hashPin, uid,
@@ -558,6 +558,10 @@ export function renderSettings(main, navigate) {
       }, "Strict: dinners at 8 g net carbs or under, day near 20 g")),
       el("p", { class: "tiny" }, s.ketoStrict ? "Dinners stay at 8 g net carbs or under, computed from the actual ingredients, so a keto day built around them stays near 20 g. Tell your care team; this depth of restriction deserves supervision." : "")] : []),
     el("div", { class: "divider" }),
+    el("div", { class: "chip-row" },
+      el("button", { class: "chip" + (s.planAllMeals ? " on" : ""), onclick: () => { store.update({ planAllMeals: !s.planAllMeals }); renderSettings(main, navigate); toast(s.planAllMeals ? "Back to dinners only." : "Breakfast and lunch join the plan from the next week you build."); } }, "Plan breakfast and lunch too")),
+    el("p", { class: "tiny" }, "Dinners stay the star; breakfasts and lunches rotate a small, honest set so mornings decide themselves."),
+    el("div", { class: "divider" }),
     el("label", { style: "display:block;font-size:0.85rem;font-weight:600;color:var(--ink-2);margin-bottom:0.3rem" }, "What is the season for?"),
     el("div", { class: "chip-row" },
       ...[["health", "Health and energy"], ["weight", "Losing weight kindly"], ["muscle", "Keeping muscle"], ["treatment", "Through treatment or a condition"]].map(([id, label]) =>
@@ -684,9 +688,19 @@ export function renderSettings(main, navigate) {
       el("h2", {}, "The reading voice"),
       el("p", { class: "muted" }, "When it is on, Harta can read passages, prompts and techniques aloud with your device\u2019s own voice, so the words can reach you with your eyes closed. Nothing is sent anywhere; the voice lives on the device."),
       voiceAvailable()
-        ? el("div", { class: "btn-row" },
-            el("button", { class: "chip" + (s.voiceOn ? " on" : ""), onclick: () => { store.update({ voiceOn: !s.voiceOn }); renderSettings(main, navigate); } }, s.voiceOn ? "Voice on" : "Voice off"),
-            s.voiceOn ? el("button", { class: "btn ghost small", onclick: () => speak("Know first, then choose. This is the voice that will read to you.") }, "Hear a sample") : null,
+        ? el("div", {},
+            el("div", { class: "btn-row" },
+              el("button", { class: "chip" + (s.voiceOn ? " on" : ""), onclick: () => { store.update({ voiceOn: !s.voiceOn }); renderSettings(main, navigate); } }, s.voiceOn ? "Voice on" : "Voice off"),
+              s.voiceOn ? el("button", { class: "btn ghost small", onclick: () => speak("Know first, then choose. This is the voice that will read to you.") }, "Hear a sample") : null,
+            ),
+            s.voiceOn ? (() => {
+              const sel = el("select", { "aria-label": "Choose the reading voice", style: "margin-top:0.6rem" });
+              const ranked = rankedVoices().slice(0, 12);
+              for (const vo of ranked) sel.append(el("option", { value: vo.name, selected: s.voiceName === vo.name ? "" : null }, vo.name.replace(/ \(.*\)/, "") + " · " + vo.lang));
+              sel.addEventListener("change", () => { setVoiceByName(sel.value); speak("This is how I sound. Keep me, or choose another."); });
+              return el("div", { class: "field", style: "margin-top:0.4rem" }, el("label", {}, "Which voice"), sel,
+                el("p", { class: "hint" }, "The warmest voices are listed first. On iPhone and Mac, downloading an enhanced Siri voice in system settings makes this genuinely human."));
+            })() : null,
           )
         : el("p", { class: "tiny" }, "This device does not offer speech; the words will wait in writing."),
     ),

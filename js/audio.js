@@ -115,32 +115,27 @@ function makeScheduler() {
   return { later, stop, get alive() { return alive; } };
 }
 
-// Havasi-mood piano: slow emotional chord arpeggios in A minor, sustained, no bed.
-function pianoEngine() {
+// Handpan: warm steel domes. Each note carries its octave and compound fifth,
+// struck softly in slow left-right hands over a D minor pentatonic.
+function handpanEngine() {
   const sch = makeScheduler();
-  const CHORDS = [
-    [110, 164.81, 220, 261.63, 329.63],        // Am
-    [87.31, 130.81, 174.61, 261.63, 349.23],   // F
-    [98, 146.83, 196, 246.94, 293.66],         // G
-    [130.81, 196, 261.63, 329.63, 392],        // C
-  ];
-  const PIANO = { partials: [[1, 1], [2, 0.5], [3, 0.22], [4, 0.1], [5, 0.05]], attack: 0.008, gain: 0.16 };
-  let ci = 0;
-  const bar = () => {
-    if (!sch.alive) return;
-    const chord = CHORDS[ci % CHORDS.length]; ci++;
-    const t = ctx.currentTime;
-    // left hand: deep root held long
-    toneVoice(chord[0], t, { ...PIANO, decay: 7, gain: 0.2 });
-    // right hand: rising arpeggio, humanised
-    chord.slice(1).forEach((f, i) => {
-      toneVoice(f * 2, t + 0.5 + i * (0.55 + Math.random() * 0.15), { ...PIANO, decay: 4.5, gain: 0.11 });
-    });
-    // occasional high answer, an octave above
-    if (Math.random() < 0.5) toneVoice(chord[2] * 4, t + 3 + Math.random(), { ...PIANO, decay: 5, gain: 0.05 });
-    sch.later(bar, 6500 + Math.random() * 1200);
+  const NOTES = [146.83, 174.61, 196, 220, 261.63, 293.66, 329.63]; // D3 F3 G3 A3 C4 D4 E4
+  const strike = (f, vel, t) => {
+    toneVoice(f, t, { partials: [[1, 1], [2, 0.55], [3.01, 0.28], [4.2, 0.08]], attack: 0.012, decay: 5.5, gain: vel });
   };
-  bar();
+  let beat = 0;
+  const hand = () => {
+    if (!sch.alive) return;
+    const t = ctx.currentTime;
+    // a slow two-hand figure: ground note, answer, occasional shimmer above
+    if (beat % 4 === 0) strike(NOTES[0], 0.2, t);                      // the deep dome
+    strike(NOTES[1 + Math.floor(Math.random() * 4)], 0.13, t + 0.02);
+    if (Math.random() < 0.45) strike(NOTES[3 + Math.floor(Math.random() * 4)], 0.09, t + (0.6 + Math.random() * 0.5));
+    if (Math.random() < 0.2) strike(NOTES[6], 0.06, t + 1.4);
+    beat++;
+    sch.later(hand, 2100 + Math.random() * 900);
+  };
+  hand();
   return sch.stop;
 }
 
@@ -193,7 +188,7 @@ function chimesEngine() {
   return sch.stop;
 }
 
-const TONAL_ENGINES = { piano: pianoEngine, bowls: bowlsEngine, kalimba: kalimbaEngine, chimes: chimesEngine };
+const TONAL_ENGINES = { handpan: handpanEngine, bowls: bowlsEngine, kalimba: kalimbaEngine, chimes: chimesEngine };
 
 export function playScape(scape) {
   ensureCtx();

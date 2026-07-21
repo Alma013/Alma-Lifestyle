@@ -275,12 +275,15 @@ textarea { min-height: 4.6rem; resize: vertical; }
   display: flex; align-items: center; justify-content: center;
   border: 1.5px solid var(--line);
   background: radial-gradient(circle at 50% 42%, var(--accent-soft), transparent 68%);
-  transition: transform var(--breath-dur, 4s) cubic-bezier(0.42, 0, 0.35, 1), box-shadow var(--breath-dur, 4s) ease;
-  transform: scale(0.72);
+  transition: box-shadow var(--breath-dur, 4s) ease;
 }
-.breath-ring.inhale { transform: scale(1); box-shadow: 0 0 60px rgba(128, 211, 44, 0.18); }
-.breath-ring.hold { transform: scale(1); }
-.breath-ring.exhale { transform: scale(0.72); box-shadow: none; }
+.breath-ring.inhale { box-shadow: 0 0 60px rgba(128, 211, 44, 0.18); }
+.breath-ring.exhale { box-shadow: none; }
+/* the sky breathes: stars drift outward on the in-breath, settle on the out */
+.breath-ring .breath-stars { transition: transform var(--breath-dur, 4s) cubic-bezier(0.42, 0, 0.35, 1); transform: scale(0.68); }
+.breath-ring.inhale .breath-stars { transform: scale(1.08); }
+.breath-ring.hold .breath-stars { transform: scale(1.08); }
+.breath-ring.exhale .breath-stars { transform: scale(0.68); }
 .breath-ring.sky {
   position: relative; overflow: hidden;
   background:
@@ -289,7 +292,8 @@ textarea { min-height: 4.6rem; resize: vertical; }
     radial-gradient(circle at 50% 50%, #100E14 0%, #17130F 78%);
   border-color: rgba(234, 223, 200, 0.18);
 }
-.breath-stars { position: absolute; inset: 0; animation: star-drift 90s linear infinite; }
+.breath-stars { position: absolute; inset: 0; }
+.breath-stars .orbit { position: absolute; inset: 0; animation: star-drift 90s linear infinite; }
 .breath-stars i {
   position: absolute; border-radius: 50%;
   background: var(--cream);
@@ -540,7 +544,7 @@ textarea { min-height: 4.6rem; resize: vertical; }
   body { background: #fff; color: #222; }
   body::after { display: none; }
   .card { box-shadow: none; border-color: #ccc; background: #fff; }
-  body:has(#doctor-brief) #app, body:has(#doctor-brief) #toast-root { display: none !important; }
-  body:has(#doctor-brief) .modal-backdrop { position: static; background: #fff; display: block; }
-  body:has(#doctor-brief) .modal { max-height: none; overflow: visible; border: none; box-shadow: none; }
+  body:has(#doctor-brief) #app, body:has(#day-sheet) #app, body:has(#doctor-brief) #toast-root, body:has(#day-sheet) #toast-root { display: none !important; }
+  body:has(#doctor-brief) .modal-backdrop, body:has(#day-sheet) .modal-backdrop { position: static; background: #fff; display: block; }
+  body:has(#doctor-brief) .modal, body:has(#day-sheet) .modal { max-height: none; overflow: visible; border: none; box-shadow: none; }
 }

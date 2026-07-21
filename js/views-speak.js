@@ -4,7 +4,9 @@
 import { el, toast, openModal } from "./ui.js";
 import { store } from "./store.js";
 import { COUNSEL_WHO, COUNSEL_WANT, COUNSEL_PLAYS, SPEAK_LESSONS, SPEAK_NOTE } from "./data2.js";
-import { speak as speakAloud, voiceAvailable } from "./voice.js";
+import { speak as speakAloud, voiceAvailable, listenOnce, listenAvailable } from "./voice.js";
+import { addJournalEntry } from "./idb.js";
+import { uid } from "./store.js";
 
 // which playbook fits this person and this goal
 function pickPlay(who, want) {
@@ -87,6 +89,27 @@ export function renderSpeak(main) {
           el("div", { class: "notice", style: "margin-top:0.6rem" }, el("strong", {}, "Practice: "), l.practice),
           el("div", { class: "source-line" }, "Source: " + l.source + "."),
           voiceAvailable() && store.get().voiceOn ? el("button", { class: "btn secondary small", style: "margin-top:0.7rem", onclick: () => speakAloud(l.title + ". " + l.body + " Practice: " + l.practice) }, "Read it to me") : null,
+          listenAvailable() ? (() => {
+            let rec = null, active = false;
+            const live = el("p", { class: "muted", style: "font-style:italic;min-height:1.4rem;margin-top:0.6rem" }, "");
+            const btn = el("button", { class: "btn small", style: "margin-top:0.7rem;margin-left:0.5rem", onclick: () => {
+              if (active) { try { rec?.stop(); } catch {} return; }
+              active = true; btn.textContent = "Stop and keep";
+              live.textContent = "Speak the practice aloud\u2026";
+              rec = listenOnce({
+                onText: (fin, interim) => { live.textContent = (fin + " " + interim).trim(); },
+                onEnd: async (finalText) => {
+                  active = false; btn.textContent = "Practise aloud";
+                  if (!finalText) { live.textContent = "Nothing caught; try again closer to the microphone."; return; }
+                  live.textContent = "\u201C" + finalText + "\u201D \u2014 kept in your journal.";
+                  await addJournalEntry({ type: "text", text: finalText, tags: ["speak-practice", l.id], prompt: l.title });
+                  store.mutate((st) => { st.journalIndex.unshift({ id: uid(), t: new Date().toISOString(), type: "text", preview: finalText.slice(0, 90), tags: ["speak-practice"] }); });
+                },
+              });
+            } }, "Practise aloud");
+            return el("div", {}, btn, live,
+              el("p", { class: "tiny" }, "Your words become text as you speak and are kept in the journal, so you can watch your phrasing sharpen over the weeks."));
+          })() : null,
         );
       } },
         el("div", { class: "card-title-row" }, el("h3", {}, l.title), el("span", { class: "tag " + cls }, label)),

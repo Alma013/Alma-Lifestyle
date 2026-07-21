@@ -75,14 +75,22 @@ export const PROMPTS = [
 
 // ---------- soundscapes (synthesised on device, honest about the evidence) ----------
 export const SOUNDSCAPES = [
-  { id: "deep-432", name: "Deep tone", sub: "432 Hz warm pad", engine: "pad", base: 108 },
-  { id: "glow-528", name: "Golden tone", sub: "528 Hz slow swell", engine: "pad", base: 132 },
-  { id: "morning-light", name: "Morning light", sub: "a brighter lift, majors and air", engine: "pad", base: 165, bright: true },
-  { id: "open-sky", name: "Open sky", sub: "wide, hopeful, unhurried", engine: "pad", base: 220, bright: true },
-  { id: "piano", name: "Piano", sub: "slow cinematic piano, felt and warm", engine: "piano" },
-  { id: "bowls", name: "Singing bowls", sub: "bronze rings that breathe", engine: "bowls" },
-  { id: "kalimba", name: "Kalimba", sub: "thumb-piano, bright and kind", engine: "kalimba" },
-  { id: "chimes", name: "Wind chimes", sub: "sparse bells on a soft breeze", engine: "chimes" },
+  { id: "handpan", name: "Handpan", sub: "warm steel, slow hands", engine: "handpan", group: "musical" },
+  { id: "bowls", name: "Singing bowls", sub: "bronze rings that breathe", engine: "bowls", group: "musical" },
+  { id: "kalimba", name: "Kalimba", sub: "thumb-piano, bright and kind", engine: "kalimba", group: "musical" },
+  { id: "chimes", name: "Wind chimes", sub: "sparse bells on a soft breeze", engine: "chimes", group: "musical" },
+  { id: "deep-432", name: "Deep tone", sub: "432 Hz warm pad", engine: "pad", base: 108, group: "tones" },
+  { id: "glow-528", name: "Golden tone", sub: "528 Hz slow swell", engine: "pad", base: 132, group: "tones" },
+  { id: "morning-light", name: "Morning light", sub: "a brighter lift, majors and air", engine: "pad", base: 165, bright: true, group: "tones" },
+  { id: "open-sky", name: "Open sky", sub: "wide, hopeful, unhurried", engine: "pad", base: 220, bright: true, group: "tones" },
+  { id: "ocean", name: "Ocean air", sub: "slow waves of breath", engine: "ocean", group: "air" },
+  { id: "night-rain", name: "Night rain", sub: "soft, steady, close", engine: "rain", group: "air" },
+  { id: "stream", name: "Forest stream", sub: "water over stones", engine: "stream", group: "air" },
+];
+export const SOUND_GROUPS = [
+  ["musical", "Musical, no noise at all"],
+  ["tones", "Frequency tones, named honestly"],
+  ["air", "Air and water, for those who love it"],
 ];
 
 
