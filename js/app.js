@@ -55,11 +55,12 @@ function route() {
   renderNav(r.parent || r.hash);
   r.render(main, navigate);
   if (r.parent) {
+    const parentRoute = ROUTES.find((x) => x.hash === r.parent);
     const back = document.createElement("button");
     back.className = "btn ghost small back-btn";
-    back.setAttribute("aria-label", "Back");
-    back.textContent = "\u2190 Back";
-    back.addEventListener("click", () => (history.length > 1 ? history.back() : navigate(r.parent)));
+    back.setAttribute("aria-label", "Back to " + (parentRoute?.label || "the previous page"));
+    back.textContent = "\u2190 " + (parentRoute?.label || "Back");
+    back.addEventListener("click", () => navigate(r.parent));
     main.prepend(back);
   }
   main.focus({ preventScroll: true });

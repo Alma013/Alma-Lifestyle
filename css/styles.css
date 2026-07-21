@@ -336,7 +336,12 @@ textarea { min-height: 4.6rem; resize: vertical; }
 
 .prompt-card blockquote { font-family: var(--font-head); font-size: 1.1rem; margin: 0 0 0.5rem; }
 
-.back-btn { margin-bottom: 0.8rem; }
+.back-btn {
+  margin-bottom: 0.8rem;
+  position: sticky; top: 0.6rem; z-index: 25;
+  background: color-mix(in srgb, var(--bg) 82%, transparent);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+}
 
 /* the doors: the app at one glance */
 .door-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
