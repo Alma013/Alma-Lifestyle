@@ -88,9 +88,9 @@ export const SOUNDSCAPES = [
   { id: "stream", name: "Forest stream", sub: "water over stones", engine: "stream", group: "air" },
 ];
 export const SOUND_GROUPS = [
-  ["musical", "Musical, no noise at all"],
-  ["tones", "Frequency tones, named honestly"],
-  ["air", "Air and water, for those who love it"],
+  ["musical", "Music, played softly"],
+  ["tones", "Tones to rest in"],
+  ["air", "Air and water"],
 ];
 
 
