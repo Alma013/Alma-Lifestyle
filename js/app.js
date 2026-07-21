@@ -1,12 +1,12 @@
-// Alma · app shell: routing and navigation
+// Harta · app shell: routing and navigation
 
 import { el, icon } from "./ui.js";
 import { store } from "./store.js";
 import { renderOnboarding, renderToday, renderPlan, renderGroceries, renderRecipes } from "./views-plan.js";
-import { renderTrack, renderLearn, renderMore, renderCareGate, renderSettings } from "./views-track.js";
+import { renderTrack, renderLearn, renderMore, renderCareGate, renderSettings, renderAbout } from "./views-track.js";
 import { renderRecharge, leaveRecharge, maybeShowArrival } from "./views-recharge.js";
-import { renderFasting, renderSignals } from "./views-signals.js";
-import { renderJournal, renderCapsule } from "./views-journal.js";
+import { renderFasting, renderSignals, leaveFasting } from "./views-signals.js";
+import { renderJournal, renderCapsule, leaveJournal } from "./views-journal.js";
 
 // The sanctuary comes first: the app opens into Recharge, and the practical
 // day (dinner, plan, numbers) waits one tap away. Uplift before admin.
@@ -28,6 +28,7 @@ const HIDDEN_ROUTES = [
   { hash: "#/capsule", render: renderCapsule, parent: "#/more" },
   { hash: "#/care", render: renderCareGate, parent: "#/more" },
   { hash: "#/settings", render: renderSettings, parent: "#/more" },
+  { hash: "#/about", render: renderAbout, parent: "#/more" },
 ];
 
 const main = document.getElementById("main");
@@ -39,6 +40,8 @@ export function navigate(hash) {
 
 function route() {
   leaveRecharge(); // stop any breathing timers when the view changes
+  leaveJournal();  // release the microphone if a recording was left running
+  leaveFasting();  // clear the fasting tick
   const hash = location.hash || "#/";
   if (!store.get().onboarded) {
     renderNav(null);
@@ -64,7 +67,12 @@ function renderNav(activeHash) {
 }
 
 window.addEventListener("hashchange", route);
-document.addEventListener("visibilitychange", () => { if (!document.hidden) route(); }); // greetings and dates stay true when the app wakes
+import { todayISO } from "./store.js";
+let routedDay = todayISO();
+document.addEventListener("visibilitychange", () => {
+  // refresh only when the DAY changed; never wipe typed answers on a mere app switch
+  if (!document.hidden && todayISO() !== routedDay) { routedDay = todayISO(); route(); maybeShowArrival(); }
+});
 store.subscribe(() => {/* views re-render themselves; hook kept for future needs */});
 route();
 maybeShowArrival(); // the daily passage, once per day, after the first paint

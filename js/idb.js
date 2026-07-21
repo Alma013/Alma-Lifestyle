@@ -1,4 +1,4 @@
-// Alma · IndexedDB for journal media (photos, voice notes, text entries).
+// Harta · IndexedDB for journal media (photos, voice notes, text entries).
 // Blobs are too heavy for localStorage; they live here, still only on this device.
 
 const DB_NAME = "alma-journal";
@@ -104,6 +104,7 @@ function blobToB64(blob) {
   return new Promise((res) => {
     const fr = new FileReader();
     fr.onload = () => res(fr.result.split(",")[1]);
+    fr.onerror = () => res(null); // one unreadable blob must not hang the whole backup
     fr.readAsDataURL(blob);
   });
 }

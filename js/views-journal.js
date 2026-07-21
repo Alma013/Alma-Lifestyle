@@ -1,4 +1,4 @@
-// Alma · journal (photos, voice, words) and the time capsule (letters that wait).
+// Harta · journal (photos, voice, words) and the time capsule (letters that wait).
 // Everything stays on this device. The journal is for the present you;
 // the capsule is for the future you, and for the people you love.
 
@@ -7,12 +7,22 @@ import { store, todayISO, fmtDay, uid } from "./store.js";
 import { addJournalEntry, listJournalEntries, getJournalEntry, deleteJournalEntry, exportJournal } from "./idb.js";
 
 // ---------- journal ----------
+let liveRecorder = null, liveStream = null;
+export function leaveJournal() {
+  if (liveRecorder && liveRecorder.state === "recording") { try { liveRecorder.stop(); } catch {} }
+  liveStream?.getTracks().forEach((t) => t.stop());
+  liveRecorder = null; liveStream = null;
+  blobUrls.forEach((u) => URL.revokeObjectURL(u)); blobUrls = [];
+}
+let blobUrls = [];
+
 export function renderJournal(main, navigate) {
   let recorder = null, chunks = [], recStart = 0;
 
   const grid = el("div", { class: "journal-grid" }, el("p", { class: "muted" }, "Loading…"));
 
   async function paintGrid() {
+    blobUrls.forEach((u) => URL.revokeObjectURL(u)); blobUrls = [];
     const entries = await listJournalEntries(120);
     if (!entries.length) {
       grid.replaceChildren(el("p", { class: "muted" }, "Nothing here yet. The first photo of a meal you were proud of is a fine beginning."));
@@ -28,6 +38,7 @@ export function renderJournal(main, navigate) {
       if (e.type === "photo" && e.blob) {
         const img = el("img", { alt: e.text || "Journal photo" });
         img.src = URL.createObjectURL(e.blob);
+        blobUrls.push(img.src);
         entry.prepend(img);
       }
       return entry;
@@ -83,9 +94,11 @@ export function renderJournal(main, navigate) {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       chunks = [];
       recorder = new MediaRecorder(stream);
+      liveRecorder = recorder; liveStream = stream;
       recorder.ondataavailable = (e) => chunks.push(e.data);
       recorder.onstop = async () => {
         stream.getTracks().forEach((t) => t.stop());
+        liveRecorder = null; liveStream = null;
         const blob = new Blob(chunks, { type: recorder.mimeType || "audio/webm" });
         const secs = Math.round((Date.now() - recStart) / 1000);
         const note = await askForNote("What is this note about? (optional)");
@@ -122,7 +135,7 @@ export function renderJournal(main, navigate) {
     el("div", { class: "card flat", style: "margin-top:1rem" },
       el("div", { class: "card-title-row" }, el("h3", {}, "The capsule"),
         el("button", { class: "link", onclick: () => navigate("#/capsule") }, "Open")),
-      el("p", { class: "muted" }, "Letters that wait: for the future you, or for your family. Your print, kept safely."),
+      el("p", { class: "muted" }, "Letters that wait: for the future you, or for your family. Your voice, kept safely."),
     ),
   );
   paintGrid();
@@ -130,13 +143,16 @@ export function renderJournal(main, navigate) {
 
 function askForNote(placeholder) {
   return new Promise((resolve) => {
+    let done = false;
+    const finish = (v) => { if (!done) { done = true; resolve(v); } };
     const ta = el("textarea", { placeholder });
     openModal(
+      { onClose: () => finish("") }, // closing any way still keeps the photo or recording
       el("h2", {}, "One line"),
       el("div", { class: "field" }, ta),
       el("div", { class: "btn-row" },
-        el("button", { class: "btn", onclick: () => { const v = ta.value.trim(); closeModal(); resolve(v); } }, "Keep"),
-        el("button", { class: "btn ghost", onclick: () => { closeModal(); resolve(""); } }, "Skip"),
+        el("button", { class: "btn", onclick: () => { const v = ta.value.trim(); closeModal(); finish(v); } }, "Keep"),
+        el("button", { class: "btn ghost", onclick: () => { closeModal(); finish(""); } }, "Skip"),
       ),
     );
   });

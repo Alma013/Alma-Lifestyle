@@ -1,4 +1,4 @@
-// Alma · content data
+// Harta · content data
 // Recipes: whole food, Mediterranean-pattern, family friendly. No calorie counts by design.
 // Ingredient sections: produce | pantry | fridge | fishmeat | frozen | bakery
 // Tags: quick (<=25 min hands-on), batch (doubles well, freezes), fish, legume, veg (vegetarian),
@@ -688,7 +688,7 @@ export const RECIPES = [
       "Crisp the bacon with garlic. Whisk eggs with parmesan.",
       "Toss zucchini in the hot pan 2 minutes, kill the heat, fold through the egg mix until silky.",
     ],
-    why: "Processed meat stays occasional in Alma's world even in keto mode: the WCRF signal on bacon does not disappear because carbs did.",
+    why: "Processed meat stays occasional in Harta's world even in keto mode: the WCRF signal on bacon does not disappear because carbs did.",
     whySource: "World Cancer Research Fund (processed meat guidance)",
   },
   {
@@ -970,6 +970,6 @@ export const NUDGES = [
 export const HABITS = [
   { id: "move", label: "Moved", question: "Did the body get to move today?", icon: "walk" },
   { id: "sleep", label: "Slept well", question: "Did last night's sleep feel enough?", icon: "moon" },
-  { id: "food", label: "Ate the pattern", question: "Did today mostly look like the pattern?", icon: "bowl" },
+  { id: "food", label: "Ate well", question: "Did today mostly look like the pattern?", icon: "bowl" },
   { id: "water", label: "Water first", question: "Was water the default drink today?", icon: "drop" },
 ];

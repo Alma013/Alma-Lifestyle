@@ -1,4 +1,4 @@
-// Alma · soundscape engine
+// Harta · soundscape engine
 // Everything is synthesised on the device with WebAudio: no files, no streaming,
 // nothing leaves the phone. Honest framing lives in data2.js (SOUND_HONESTY).
 
@@ -71,9 +71,15 @@ function noiseEngine(kind) {
   const src = ctx.createBufferSource(); src.buffer = buf; src.loop = true;
   const filter = ctx.createBiquadFilter();
   filter.type = "lowpass";
-  filter.frequency.value = kind === "rain" ? 3200 : kind === "stream" ? 1600 : 900;
-  const bus = ctx.createGain(); bus.gain.value = kind === "rain" ? 0.5 : kind === "stream" ? 0.55 : 0.7;
+  filter.frequency.value = kind === "rain" ? 2400 : kind === "stream" ? 1400 : 620;
+  filter.Q.value = 0.3;
+  const bus = ctx.createGain(); bus.gain.value = kind === "rain" ? 0.34 : kind === "stream" ? 0.42 : 0.55;
   src.connect(filter); filter.connect(bus); bus.connect(master);
+  // slow wandering of the filter keeps the bed alive instead of a flat hiss
+  const wander = ctx.createOscillator(); const wanderGain = ctx.createGain();
+  wander.frequency.value = kind === "rain" ? 0.05 : 0.03;
+  wanderGain.gain.value = filter.frequency.value * 0.35;
+  wander.connect(wanderGain); wanderGain.connect(filter.frequency); wander.start();
   src.start();
 
   let lfo = null, lfoGain = null;
@@ -82,7 +88,7 @@ function noiseEngine(kind) {
     lfo.frequency.value = kind === "stream" ? 0.5 : 0.08; lfoGain.gain.value = kind === "stream" ? 0.12 : 0.32;
     lfo.connect(lfoGain); lfoGain.connect(bus.gain); lfo.start();
   }
-  return () => { try { src.stop(); lfo?.stop(); } catch {} bus.disconnect(); };
+  return () => { try { src.stop(); lfo?.stop(); wander.stop(); } catch {} bus.disconnect(); };
 }
 
 // Gentle keys: slow pentatonic notes over a whisper of pad. Piano-adjacent,
@@ -135,14 +141,14 @@ export function stopScape(fade = 1.2) {
   if (!ctx || !current) return;
   const dying = current; current = null;
   fadeMaster(0, fade);
-  setTimeout(() => { if (!current) dying.stop(); }, fade * 1000 + 60);
+  setTimeout(() => dying.stop(), fade * 1000 + 60); // always stop the old engine; never let two run
 }
 
 export function playingId() { return current?.id || null; }
 
 // One soft chime for breath-phase changes; quiet, brief, optional.
 export function chime() {
-  if (!ctx || !current) return; // only chime while a scape is running
+  ensureCtx(); // the Begin tap is a user gesture; the chime may sound alone
   const o = ctx.createOscillator(); const g = ctx.createGain();
   o.type = "sine"; o.frequency.value = 660;
   g.gain.setValueAtTime(0.0001, ctx.currentTime);

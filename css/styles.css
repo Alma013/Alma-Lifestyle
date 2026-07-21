@@ -27,7 +27,7 @@
   --accent-ink: #16210F;
   --accent-soft: rgba(128, 211, 44, 0.15);
   --accent-strong: #9CE05B;
-  --warm: #D08B5B;
+  --warm: #DDA47E;
   --warm-soft: rgba(208, 139, 91, 0.16);
   --amber: #D9A441;
   --amber-soft: rgba(217, 164, 65, 0.15);
@@ -48,19 +48,19 @@
     --surface-2: #EFE4CE;
     --surface-3: #E6D9BE;
     --ink: #2B2521;
-    --ink-2: rgba(43, 37, 33, 0.82);
-    --ink-3: rgba(43, 37, 33, 0.62);
+    --ink-2: rgba(43, 37, 33, 0.84);
+    --ink-3: rgba(43, 37, 33, 0.75);
     --line: rgba(43, 37, 33, 0.18);
     --line-soft: rgba(43, 37, 33, 0.1);
-    --accent: #529312;
+    --accent: #3D6E15;
     --accent-ink: #F4EBD9;
     --accent-soft: rgba(128, 211, 44, 0.18);
     --accent-strong: #3D6E15;
-    --warm: #A45A2E;
+    --warm: #8C4A22;
     --warm-soft: rgba(164, 90, 46, 0.14);
-    --amber: #8A6414;
+    --amber: #755410;
     --amber-soft: rgba(197, 152, 43, 0.18);
-    --chart-line: #529312;
+    --chart-line: #3D6E15;
     --focus: #3D6E15;
     --shadow: 0 1px 2px rgba(43, 37, 33, 0.08), 0 8px 26px rgba(43, 37, 33, 0.09);
   }
@@ -184,12 +184,12 @@ button { font-family: inherit; }
 .btn:disabled { opacity: 0.45; cursor: default; }
 .btn-row { display: flex; gap: 0.6rem; flex-wrap: wrap; align-items: center; }
 
-.link { background: none; border: none; padding: 0; color: var(--accent-strong); cursor: pointer; font-size: 0.88rem; text-decoration: underline; text-underline-offset: 2px; }
+.link { background: none; border: none; padding: 0.4rem 0.25rem; margin: -0.4rem -0.25rem; color: var(--accent-strong); cursor: pointer; font-size: 0.88rem; text-decoration: underline; text-underline-offset: 2px; }
 
 .chip {
   display: inline-flex; align-items: center; gap: 0.3rem;
   border: 1px solid var(--line); border-radius: 999px;
-  padding: 0.3rem 0.78rem; font-size: 0.83rem;
+  padding: 0.42rem 0.85rem; font-size: 0.83rem;
   background: transparent; color: var(--ink-2); cursor: pointer;
   transition: background 140ms ease, border-color 140ms ease;
 }
@@ -393,12 +393,18 @@ textarea { min-height: 4.6rem; resize: vertical; }
 .day-row .meal-sub { font-size: 0.76rem; color: var(--ink-3); }
 .day-row .empty { color: var(--ink-3); font-style: italic; font-weight: 400; }
 
+.day-row { cursor: grab; }
+.day-row.dragging { opacity: 0.55; }
+.day-row.drop-target { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent) inset; }
+.row-actions { display: inline-flex; gap: 0.25rem; align-items: center; }
+.row-actions .btn.small { padding: 0.3rem 0.55rem; min-width: 2rem; }
+
 /* ---------- groceries ---------- */
 .gsec { margin-bottom: 1rem; }
 .gsec h3 { font-family: var(--font-ui); font-size: 0.76rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 0.4rem; }
 .gitem { display: flex; align-items: center; gap: 0.65rem; padding: 0.42rem 0.2rem; border-bottom: 1px dashed var(--line-soft); }
 .gitem:last-child { border-bottom: none; }
-.gitem input { width: 1.15rem; height: 1.15rem; accent-color: var(--accent); flex: none; }
+.gitem input { width: 1.4rem; height: 1.4rem; accent-color: var(--accent); flex: none; }
 .gitem .q { margin-left: auto; color: var(--ink-3); font-size: 0.82rem; white-space: nowrap; }
 .gitem.done label { text-decoration: line-through; color: var(--ink-3); }
 .gitem label { cursor: pointer; }
@@ -506,13 +512,16 @@ textarea { min-height: 4.6rem; resize: vertical; }
 
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
-  * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
+  * { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; animation-delay: 0ms !important; }
 }
 
-/* print: grocery list */
+/* print: grocery list, and the doctor brief when its modal is open */
 @media print {
   .tabbar, .sidebar, .btn, .link { display: none !important; }
   body { background: #fff; color: #222; }
   body::after { display: none; }
   .card { box-shadow: none; border-color: #ccc; background: #fff; }
+  body:has(#doctor-brief) #app, body:has(#doctor-brief) #toast-root { display: none !important; }
+  body:has(#doctor-brief) .modal-backdrop { position: static; background: #fff; display: block; }
+  body:has(#doctor-brief) .modal { max-height: none; overflow: visible; border: none; box-shadow: none; }
 }

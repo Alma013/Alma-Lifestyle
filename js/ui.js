@@ -1,4 +1,4 @@
-// Alma · UI helpers
+// Harta · UI helpers
 
 export function el(tag, attrs = {}, ...children) {
   const node = document.createElement(tag);
@@ -10,6 +10,9 @@ export function el(tag, attrs = {}, ...children) {
     else if (k === "dataset") Object.assign(node.dataset, v);
     else if (v === true) node.setAttribute(k, "");
     else node.setAttribute(k, v);
+  }
+  if ((node.classList.contains("chip") || node.classList.contains("sound-tile")) && tag === "button" && !("aria-pressed" in attrs)) {
+    node.setAttribute("aria-pressed", node.classList.contains("on") || node.classList.contains("playing") ? "true" : "false");
   }
   for (const c of children.flat(Infinity)) {
     if (c === null || c === undefined || c === false) continue;
@@ -51,8 +54,15 @@ export function icon(name, size = 24) {
 }
 
 // ---------- modal ----------
+let modalOnClose = null;   // fires exactly once however the modal closes
+let modalReturnFocus = null;
+
 export function openModal(...children) {
+  let opts = {};
+  if (children[0] && !children[0].nodeType && typeof children[0] === "object") opts = children.shift();
   closeModal();
+  modalOnClose = opts.onClose || null;
+  modalReturnFocus = document.activeElement;
   const root = document.getElementById("modal-root");
   const modal = el("div", { class: "modal", role: "dialog", "aria-modal": "true" },
     el("button", { class: "link modal-close", onclick: closeModal, "aria-label": "Close" }, "Close"),
@@ -62,16 +72,35 @@ export function openModal(...children) {
     class: "modal-backdrop",
     onclick: (e) => { if (e.target === backdrop) closeModal(); },
   }, modal);
+  // keep Tab inside the dialog
+  modal.addEventListener("keydown", (e) => {
+    if (e.key !== "Tab") return;
+    const f = [...modal.querySelectorAll("button, input, select, textarea, [tabindex]")].filter((x) => !x.disabled);
+    if (!f.length) return;
+    const first = f[0], last = f[f.length - 1];
+    if (e.shiftKey && document.activeElement === first) { last.focus(); e.preventDefault(); }
+    else if (!e.shiftKey && document.activeElement === last) { first.focus(); e.preventDefault(); }
+  });
   root.append(backdrop);
+  document.getElementById("app").inert = true;
   document.body.style.overflow = "hidden";
-  modal.querySelector("button, input, [tabindex]")?.focus();
+  modal.querySelector("input, textarea, select, button:not(.modal-close)")?.focus();
   return modal;
 }
 export function closeModal() {
+  const done = modalOnClose; modalOnClose = null;
   document.getElementById("modal-root").replaceChildren();
+  document.getElementById("app").inert = false;
   document.body.style.overflow = "";
+  if (done) done();
+  if (modalReturnFocus && document.contains(modalReturnFocus)) modalReturnFocus.focus();
+  modalReturnFocus = null;
 }
-document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeModal(); });
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape") return;
+  if (!document.getElementById("modal-root").hasChildNodes()) return;
+  closeModal();
+});
 
 // ---------- toast ----------
 export function toast(msg) {
@@ -83,13 +112,14 @@ export function toast(msg) {
 // ---------- sparkline (single series; title names it, so no legend needed) ----------
 // values: array of {x: label, y: 1..5 | null}; renders 2px line, 8px end marker,
 // direct label on the latest value. Ink for text, chart colour for the mark only.
-export function sparkline(values, { min = 1, max = 5 } = {}) {
+export function sparkline(values, { min = 1, max = 5, label = "" } = {}) {
   const W = 320, H = 64, PAD = 8;
   const pts = values.filter((v) => v.y !== null && v.y !== undefined);
   const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
   svg.setAttribute("viewBox", `0 0 ${W} ${H}`);
   svg.setAttribute("class", "spark-svg");
   svg.setAttribute("role", "img");
+  if (label) svg.setAttribute("aria-label", label);
   if (!pts.length) {
     svg.innerHTML = `<text x="${W / 2}" y="${H / 2 + 4}" text-anchor="middle" font-size="12" fill="var(--ink-3)">No entries yet</text>`;
     return svg;

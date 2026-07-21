@@ -1,4 +1,4 @@
-// Alma · store
+// Harta · store
 // All data lives in localStorage on this device. Nothing is sent anywhere, ever.
 
 import { RECIPES } from "./data.js";
@@ -42,6 +42,7 @@ const DEFAULT_STATE = {
   capsules: [],         // { id, to, title, body, openOn, created, opened }
   journalIndex: [],     // metadata only; photo/audio blobs live in IndexedDB
   arrivalLast: null,    // ISO date the arrival passage last showed
+  voiceOn: false,       // read-aloud with the device's own voice, user's choice
   sanctuaryMinutes: 0,  // lifetime minutes of breathing/sound, for gentle recognition
   week: null,           // { start: ISO(Mon), days: { mon: {recipeId|null, leftoverOf|null} }, checked: {itemKey:bool}, extras: [] }
   weekHistory: [],      // archived weeks (most recent first, cap 26)
@@ -95,7 +96,7 @@ export const store = {
   importJSON(text) {
     const parsed = JSON.parse(text); // throws on bad input; caller catches
     if (typeof parsed !== "object" || parsed === null || ![1, 2].includes(parsed.version)) {
-      throw new Error("Not an Alma backup file");
+      throw new Error("Not an Harta backup file");
     }
     state = { ...structuredClone(DEFAULT_STATE), ...parsed };
     persist();
@@ -117,6 +118,10 @@ export function greeting() {
   if (h >= 11 && h < 17) return "Good afternoon";
   if (h >= 17 && h < 22) return "Good evening";
   return "Good night";
+}
+
+export function localDayOf(isoInstant) {
+  return localISO(new Date(isoInstant));
 }
 
 export function todayISO() {
@@ -260,9 +265,27 @@ export function swapDay(dayKey) {
     if (!pool.length) return;
     const next = pool[Math.floor(Math.random() * pool.length)];
     s.week.days[dayKey] = { recipeId: next.id };
-    if (current) delete s.week.checked; // grocery list changed; reset ticks
-    s.week.checked = {};
+    // ticks are kept: half a shop should survive a dinner swap
   });
+}
+
+// "2 tbsp" + "1 tbsp" should read 3 tbsp, not homework in the aisle
+export function sumQuantities(qs) {
+  if (qs.length <= 1) return qs.join("");
+  const parsed = qs.map((q) => {
+    let m = q.match(/^(\d+) x (\d+) (g|ml)$/); if (m) return [Number(m[1]) * Number(m[2]), m[3]];
+    m = q.match(/^([\d.\/]+)\s*(g|ml|tbsp|tsp|cups?|cloves?|heads?|bunche?s?|sprigs?)?$/);
+    if (!m) return null;
+    let n = m[1].includes("/") ? Number(m[1].split("/")[0]) / Number(m[1].split("/")[1]) : Number(m[1]);
+    return [n, m[2] || ""];
+  });
+  if (parsed.some((p) => !p)) return qs.join(" + ");
+  const unit = parsed[0][1].replace(/s$/, "");
+  if (!parsed.every((p) => p[1].replace(/s$/, "") === unit)) return qs.join(" + ");
+  const total = parsed.reduce((a, p) => a + p[0], 0);
+  const rounded = Math.round(total * 100) / 100;
+  if (unit === "g" && rounded >= 1000) return (rounded / 1000) + " kg";
+  return rounded + (unit ? " " + unit + (rounded > 1 && /cup|clove|head|bunch|sprig/.test(unit) ? "s" : "") : "");
 }
 
 // ---------- grocery list ----------
@@ -332,8 +355,11 @@ export function uid() {
 }
 
 // ---------- fasting ----------
-export function startFast() {
-  store.mutate((s) => { s.fasting.activeStart = new Date().toISOString(); });
+export function startFast(atISO) {
+  store.mutate((s) => { s.fasting.activeStart = atISO || new Date().toISOString(); });
+}
+export function adjustFastStart(atISO) {
+  store.mutate((s) => { if (s.fasting.activeStart) s.fasting.activeStart = atISO; });
 }
 export function endFast() {
   store.mutate((s) => {
@@ -349,6 +375,32 @@ export function endFast() {
 export function fastElapsedHours() {
   const s = state.fasting.activeStart;
   return s ? (Date.now() - new Date(s).getTime()) / 36e5 : 0;
+}
+
+export function eatingWindow() {
+  const f = state.fasting;
+  const fastH = ({ "12-12": 12, "14-10": 14, "16-8": 16 })[f.protocol] || null;
+  if (f.activeStart) {
+    const opens = new Date(new Date(f.activeStart).getTime() + (fastH || 16) * 36e5);
+    const mins = Math.round((opens - Date.now()) / 60000);
+    return { mode: "fasting", opens, minsToOpen: Math.max(0, mins), canEat: mins <= 0 };
+  }
+  if (!fastH) return null;
+  const close = f.kitchenCloses || "19:30";
+  const [ch, cm] = close.split(":").map(Number);
+  const closesToday = new Date(); closesToday.setHours(ch, cm, 0, 0);
+  const opens = new Date(closesToday.getTime() + fastH * 36e5);
+  const now = new Date();
+  if (now < closesToday) {
+    // inside today's eating window
+    return { mode: "open", closes: closesToday, minsToClose: Math.round((closesToday - now) / 60000), canEat: true };
+  }
+  // kitchen closed tonight; opens fastH later
+  const mins = Math.round((opens - now) / 60000);
+  return { mode: "closed", opens, minsToOpen: Math.max(0, mins), canEat: mins <= 0 };
+}
+export function fmtClock(d) {
+  return d.toLocaleTimeString("en-AU", { hour: "numeric", minute: "2-digit" });
 }
 
 // ---------- signals (glucose, ketones, labs) ----------
@@ -372,14 +424,16 @@ export function addReading(type, vMmol, ctx = "", note = "", t = new Date().toIS
 export function latestMetabolicPair() {
   const byDay = {};
   for (const r of state.signals.readings) {
-    const day = r.t.slice(0, 10);
-    (byDay[day] ||= {})[r.type] = (byDay[day][r.type] ?? r.v); // first (most recent) per type per day
+    const day = localDayOf(r.t); // local day, so a 7 am reading in Perth stays on today's date
+    (byDay[day] ||= []).push(r);
   }
   const days = Object.keys(byDay).sort().reverse();
   for (const d of days) {
-    const g = byDay[d].glucose, k = byDay[d].ketone;
-    if (g != null && k != null && k > 0) {
-      return { date: d, glucose: g, ketone: k, gki: Math.round((g / k) * 10) / 10, boz: Math.round((g * 18.016) / k) };
+    const rs = byDay[d].sort((a, b) => a.t.localeCompare(b.t)); // oldest first: the morning pair
+    const g = rs.find((r) => r.type === "glucose");
+    const k = rs.find((r) => r.type === "ketone");
+    if (g && k && k.v > 0 && Math.abs(new Date(g.t) - new Date(k.t)) <= 3 * 36e5) {
+      return { date: d, glucose: g.v, ketone: k.v, gki: Math.round((g.v / k.v) * 10) / 10, boz: Math.round((g.v * 18.016) / k.v) };
     }
   }
   return null;

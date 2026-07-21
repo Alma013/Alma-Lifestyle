@@ -1,9 +1,10 @@
-// Alma · views: track (habits, check-in, progress), learn, more (care, settings)
+// Harta · views: track (habits, check-in, progress), learn, more (care, settings)
 
 import { el, icon, openModal, closeModal, toast, sparkline } from "./ui.js";
 import { WHY_CARDS, NUDGES, HABITS } from "./data.js";
 import { WHY_CARDS_V2, EXPERTS, METHOD_CARD, LI_TABLE } from "./data2.js";
 import { exportJournal, importJournal } from "./idb.js";
+import { voiceAvailable, speak, stopSpeaking } from "./voice.js";
 import {
   store, eligibleRecipes, recipesForLiFoods, DAY_KEYS, DAY_NAMES, todayISO, mondayOf, dateOfDayKey, fmtDay,
   weekHabitSummary, toggleHabit, hashPin, uid,
@@ -44,7 +45,7 @@ export function renderTrack(main, navigate) {
   main.replaceChildren(
     el("div", { class: "page-head" },
       el("span", { class: "eyebrow" }, "Week of " + fmtDay(weekStart)),
-      el("h1", {}, "The rhythm"),
+      el("h1", {}, "The gentle four"),
       el("p", {}, "Four quiet habits, tapped when they happen. Patterns, never streaks: a blank day is information, not a failure."),
     ),
     el("div", { class: "card" }, habitBlocks),
@@ -113,6 +114,7 @@ function runCheckin(main, navigate) {
       el("p", { class: "muted" }, heldFacts.length
         ? "The taps say: " + heldFacts.join(", ") + ". Whatever else happened, that happened too."
         : "The trackers are quiet this week, which is fine. Something still held, even if it was just getting to today."),
+      s.checkins[0]?.held ? el("p", { class: "tiny", style: "font-style:italic" }, "Last week you said: \u201C" + s.checkins[0].held + "\u201D") : null,
       el("div", { class: "field" }, el("label", {}, "Name it, however small"),
         el("textarea", { placeholder: "Three dinners from the plan. A walk on Tuesday. Saying no to something.", oninput: (e) => (draft.held = e.target.value) })),
     ),
@@ -253,7 +255,7 @@ export function renderLearn(main) {
         el("p", { class: "one-liner" }, c.oneLiner),
       );
     }),
-    el("p", { class: "tiny center" }, "Every card exists so you can decide from evidence, not marketing. And because Alma never plays doctor, you can trust it to hand the medical questions to yours, better phrased."),
+    el("p", { class: "tiny center" }, "Every card exists so you can decide from evidence, not marketing. And because Harta never plays doctor, you can trust it to hand the medical questions to yours, better phrased."),
   );
 }
 
@@ -280,17 +282,83 @@ export function renderMore(main, navigate) {
     );
   main.replaceChildren(
     el("div", { class: "page-head" }, el("h1", {}, "More")),
-    item("#/learn", "The why", "Every rule with its source: the method, the five voices, the evidence cards.", "learn"),
+    item("#/learn", "Learn: the why", "Every rule with its source: the method, the five voices, Dr Li\u2019s table, the evidence cards.", "learn"),
     item("#/journal", "Journal", "Photos, voice notes and words, kept for the future you.", "camera"),
-    item("#/capsule", "The capsule", "Letters sealed for later: your print, for you and yours.", "mail"),
+    item("#/capsule", "The capsule", "Letters sealed for later: your voice, kept for the people you love.", "mail"),
     item("#/fasting", "Fasting", "Gentle eating windows, honest safety, a timer that never nags.", "hourglass"),
     item("#/signals", "Signals", "Glucose, ketones and labs, charted kindly. GKI and Dr Boz ratio included.", "pulse"),
     item("#/care", "Care calendar", "Appointments, check-ups and your question list for the doctor. Private, optional PIN.", "lock"),
     item("#/settings", "Settings and data", "Way of eating, exclusions, household, backup, and the promises this app makes."),
+    item("#/about", "What this app is", "The whole promise on one page, and a way to hand it to someone who needs it.", "heart"),
     el("div", { class: "card flat" },
-      el("h3", {}, "About Alma"),
+      el("h3", {}, "About Harta"),
       el("p", { class: "muted" }, "Built by someone who learned the hard way that the best time to care about your health is before you have to. Everything here follows one idea: know first, then choose."),
       el("p", { class: "tiny" }, "Private like a paper journal, useful like an app: everything stays on this device, so it cannot be leaked, sold or fed to an ad machine. Medical decisions stay with your doctor, which is exactly why you can relax here."),
+    ),
+  );
+}
+
+function openDoctorBrief() {
+  const s = store.get();
+  const g = s.signals.readings.filter((r) => r.type === "glucose").slice(0, 30);
+  const k = s.signals.readings.filter((r) => r.type === "ketone").slice(0, 10);
+  const avg = (a) => a.length ? Math.round((a.reduce((x, y) => x + y.v, 0) / a.length) * 10) / 10 : null;
+  const rows = [];
+  if (g.length) rows.push(["Glucose (last " + g.length + " readings)", "avg " + avg(g) + " mmol/L, range " + Math.min(...g.map(r => r.v)) + " to " + Math.max(...g.map(r => r.v))]);
+  if (k.length) rows.push(["Blood ketones (last " + k.length + ")", "avg " + avg(k) + " mmol/L"]);
+  for (const [name, labs] of (() => { const by = {}; for (const l of s.signals.labs) (by[l.name] ||= []).push(l); return Object.entries(by); })()) {
+    labs.sort((a, b) => b.date.localeCompare(a.date));
+    rows.push([name, labs.slice(0, 3).map((l) => l.value + (l.unit ? " " + l.unit : "") + " (" + fmtDay(l.date) + ")").join(" · ")]);
+  }
+  if (s.fasting.log.length) rows.push(["Fasting pattern", s.fasting.log.slice(0, 5).map((f) => f.hours + " h").join(", ") + (s.fasting.protocol ? " (" + s.fasting.protocol.replace("-", ":") + ")" : "")]);
+  const recent = s.checkins.slice(0, 4);
+  if (recent.length) rows.push(["Self-rated (1 to 5, latest first)", recent.map((c) => `E${c.energy} S${c.sleep} M${c.mood}`).join(" · ")]);
+  rows.push(["Way of eating", (s.eatingStyle === "keto" ? "Ketogenic" + (s.ketoStrict ? " (strict)" : "") : "Mediterranean whole-food") + ((s.profile.dietPrefs || []).length ? ", " + s.profile.dietPrefs.join(", ") : "")]);
+  const questions = s.care.questions.filter((q) => !q.done);
+  openModal(
+    el("h2", {}, "Doctor brief"),
+    el("p", { class: "tiny" }, "One page for the consult: your numbers and your questions, nothing else. Print it or show the screen."),
+    el("div", { id: "doctor-brief" },
+      el("table", { style: "width:100%;border-collapse:collapse;font-size:0.9rem" },
+        ...rows.map(([a, b]) => el("tr", {},
+          el("td", { style: "padding:0.35rem 0.6rem 0.35rem 0;border-bottom:1px dashed var(--line-soft);font-weight:600;white-space:nowrap;vertical-align:top" }, a),
+          el("td", { style: "padding:0.35rem 0;border-bottom:1px dashed var(--line-soft)" }, b)))),
+      questions.length ? el("div", { style: "margin-top:0.8rem" },
+        el("strong", {}, "Questions for you:"),
+        el("ol", { style: "margin:0.3rem 0 0;padding-left:1.2rem" }, questions.map((q) => el("li", {}, q.text)))) : null,
+      el("p", { class: "tiny", style: "margin-top:0.8rem" }, "Prepared with Harta. Patient-entered data; please verify anything that will guide treatment."),
+    ),
+    el("button", { class: "btn", style: "margin-top:0.8rem", onclick: () => window.print() }, "Print"),
+  );
+}
+
+export function renderAbout(main) {
+  const APP_URL = "https://alma013.github.io/Alma-Lifestyle/";
+  const benefits = [
+    ["It starts by filling you up", "The app opens into a sanctuary: a passage for the soul, guided breath, gentle sound. Admin can wait; batteries first."],
+    ["Dinner decides itself", "A week of whole-food, family-sized dinners planned around your actually-rushed nights, with the grocery list written and summed for the aisle."],
+    ["You always know why", "Every suggestion carries its reason and a named source, honestly labelled from strong to contested. You choose from knowledge, never from hype."],
+    ["Your numbers, read kindly", "Glucose, ketones and labs charted for patterns, GKI included, and turned into one printable brief for your doctor: ten minutes of consult, twice the value."],
+    ["It never turns on you", "No calorie targets, no weight, no streaks, no punishments. Facts when you want them, warnings only where the evidence is real."],
+    ["It keeps what matters", "A journal for photos, voice notes and handwritten pages; letters sealed until a chosen date. Your voice, kept for the people you love."],
+    ["Private as a drawer", "No account, no cloud, no tracking. Everything lives on your device, which means nothing can be hacked, leaked, sold or fed to an ad machine."],
+  ];
+  main.replaceChildren(
+    el("div", { class: "page-head" },
+      el("span", { class: "eyebrow" }, "Know first, then choose"),
+      el("h1", {}, "What this app is"),
+      el("p", {}, "A sanctuary first, then the practical day: the map to living well, kept on your own device."),
+    ),
+    ...benefits.map(([h, b]) => el("div", { class: "card flat" }, el("h3", {}, h), el("p", { class: "muted", style: "margin:0" }, b))),
+    el("div", { class: "card" },
+      el("h3", {}, "Hand it to someone"),
+      el("p", { class: "muted" }, "The app is free and private by design. Anyone with the link gets their own copy; nothing is shared between devices."),
+      el("button", { class: "btn secondary small", onclick: async () => {
+        try {
+          if (navigator.share) await navigator.share({ title: "Harta", text: "A private companion for living well: meals, breath, numbers and a journal, all on your own device.", url: APP_URL });
+          else { await navigator.clipboard.writeText(APP_URL); toast("Link copied"); }
+        } catch {}
+      } }, "Share the link"),
     ),
   );
 }
@@ -301,7 +369,7 @@ let careUnlocked = false;
 export function renderCareGate(main, navigate) {
   const s = store.get();
   if (!s.care.pinHash || careUnlocked) return renderCare(main, navigate);
-  const input = el("input", { type: "password", inputmode: "numeric", maxlength: 4, placeholder: "PIN", autocomplete: "off" });
+  const input = el("input", { type: "password", inputmode: "numeric", maxlength: 4, placeholder: "PIN", autocomplete: "off", "aria-label": "4-digit PIN" });
   const tryUnlock = async () => {
     if ((await hashPin(input.value)) === s.care.pinHash) { careUnlocked = true; renderCare(main, navigate); }
     else { toast("That PIN doesn't match"); input.value = ""; }
@@ -312,7 +380,17 @@ export function renderCareGate(main, navigate) {
       el("h2", { class: "center" }, "Care calendar"),
       el("p", { class: "muted center" }, "This area is PIN protected."),
       el("div", { class: "field" }, input),
-      el("button", { class: "btn", style: "width:100%", onclick: tryUnlock }, "Unlock"),
+      el("button", { class: "btn", style: "width:100%", onclick: tryUnlock }, "Open"),
+      el("button", { class: "link", style: "margin-top:0.8rem", onclick: () => {
+        openModal(
+          el("h2", {}, "Forgot the PIN?"),
+          el("p", { class: "muted" }, "It is a light lock, not a vault: Harta can remove it and your care data stays exactly as it is. Anyone holding this device could do the same, which is the honest trade-off of a light lock."),
+          el("div", { class: "btn-row" },
+            el("button", { class: "btn", onclick: () => { store.mutate((st) => { st.care.pinHash = null; }); careUnlocked = true; closeModal(); renderCare(main, navigate); toast("PIN removed. Set a new one any time."); } }, "Remove the PIN"),
+            el("button", { class: "btn ghost", onclick: closeModal }, "Keep trying"),
+          ),
+        );
+      } }, "Forgot the PIN?"),
     ),
   );
 }
@@ -367,6 +445,7 @@ function renderCare(main, navigate) {
             v.next && el("p", { class: "tiny" }, "Next: " + v.next))))]
       : []),
     el("div", { class: "btn-row" },
+      el("button", { class: "btn secondary small", onclick: () => openDoctorBrief() }, icon("print", 15), "Print a doctor brief"),
       el("button", { class: "btn ghost small", onclick: () => setupPin(main, navigate) }, icon("lock", 15), s.care.pinHash ? "Change PIN" : "Add a PIN"),
     ),
   );
@@ -455,7 +534,7 @@ export function renderSettings(main, navigate) {
       el("button", { class: "chip" + (s.eatingStyle === "keto" ? " on" : ""), onclick: () => {
         openModal(
           el("h2", {}, "Switching to ketogenic"),
-          el("p", { class: "muted" }, "Alma will plan from the ketogenic recipe set (4 to 18 g computed net carbs per serve, shown on every recipe) and it can go stricter in Settings. Two honest notes first:"),
+          el("p", { class: "muted" }, "Harta will plan from the ketogenic recipe set (4 to 18 g computed net carbs per serve, shown on every recipe) and it can go stricter in Settings. Two honest notes first:"),
           el("ul", { class: "muted", style: "padding-left:1.1rem" },
             el("li", {}, "Tell your GP, especially if you take any medication: keto changes how some medicines behave."),
             el("li", {}, "Adult plates only. Children eat the same dinners plus their carbs; a ketogenic diet is never a child's diet outside specialist epilepsy care."),
@@ -474,7 +553,7 @@ export function renderSettings(main, navigate) {
       el("button", {
         class: "chip" + (s.ketoStrict ? " on" : ""),
         onclick: () => { store.update({ ketoStrict: !s.ketoStrict }); renderSettings(main, navigate); toast(s.ketoStrict ? "Standard keto" : "Strict keto: dinners now stay at 8 g net carbs or under, no added sugar."); },
-      }, "Strict: max 20 g net carbs a day, no sugar")),
+      }, "Strict: dinners at 8 g net carbs or under, day near 20 g")),
       el("p", { class: "tiny" }, s.ketoStrict ? "Dinners stay at 8 g net carbs or under, computed from the actual ingredients, so a keto day built around them stays near 20 g. Tell your care team; this depth of restriction deserves supervision." : "")] : []),
     el("div", { class: "divider" }),
     el("label", { style: "display:block;font-size:0.85rem;font-weight:600;color:var(--ink-2);margin-bottom:0.3rem" }, "What is the season for?"),
@@ -486,7 +565,7 @@ export function renderSettings(main, navigate) {
         }, label))),
     el("p", { class: "tiny" }, "The goal tilts suggestions; it never becomes targets, grades or punishments. Weight is still never tracked here."),
     el("div", { class: "divider" }),
-    el("label", { style: "display:block;font-size:0.85rem;font-weight:600;color:var(--ink-2);margin-bottom:0.3rem" }, "Also keep every plan"),
+    el("label", { style: "display:block;font-size:0.85rem;font-weight:600;color:var(--ink-2);margin-bottom:0.3rem" }, "Every plan will also be:"),
     el("div", { class: "chip-row" },
       ...[["vegan", "Vegan"], ["veg", "Vegetarian"], ["gf", "Gluten free"], ["nosugar", "No added sugar"]].map(([id, label]) =>
         el("button", {
@@ -502,7 +581,7 @@ export function renderSettings(main, navigate) {
             toast(n >= 7 ? `${n} recipes match. The next plan will respect it.` : `Only ${n} recipes match that combination; a full week needs seven.`);
           },
         }, label))),
-    el("p", { class: "tiny" }, "When sweetness is needed anywhere, Alma reaches for pure allulose, stevia or monk fruit. ",
+    el("p", { class: "tiny" }, "When sweetness is needed anywhere, Harta reaches for pure allulose, stevia or monk fruit. ",
       el("button", { class: "link", onclick: () => openWhy("sweetness") }, "The honest why")),
   );
 
@@ -577,6 +656,7 @@ export function renderSettings(main, navigate) {
             try {
               const text = await f.text();
               const parsed = JSON.parse(text);
+              if (!confirm("Replace everything on this device with this backup? Current data will be overwritten.")) { inp.value = ""; return; }
               const journal = parsed.journal || [];
               delete parsed.journal;
               store.importJSON(JSON.stringify(parsed));
@@ -584,24 +664,34 @@ export function renderSettings(main, navigate) {
               toast("Backup restored" + (journal.length ? ` (${journal.length} journal entries)` : ""));
               navigate("#/");
             }
-            catch { toast("That file doesn't look like an Alma backup"); }
+            catch { toast("That file doesn't look like an Harta backup"); }
           });
           return el("span", {}, inp, el("button", { class: "btn ghost small", onclick: () => inp.click() }, "Restore backup"));
         })(),
         el("button", {
           class: "btn danger small",
           onclick: () => {
-            if (confirm("Erase everything Alma has stored on this device? This cannot be undone.") && confirm("Really erase? A backup file is the only way back.")) {
+            if (confirm("Erase everything Harta has stored on this device? This cannot be undone.") && confirm("Really erase? A backup file is the only way back.")) {
               store.wipe(); careUnlocked = false; navigate("#/"); toast("All data erased");
             }
           },
         }, "Erase all data"),
       ),
     ),
+    el("div", { class: "card" },
+      el("h2", {}, "The reading voice"),
+      el("p", { class: "muted" }, "When it is on, Harta can read passages, prompts and techniques aloud with your device\u2019s own voice, so the words can reach you with your eyes closed. Nothing is sent anywhere; the voice lives on the device."),
+      voiceAvailable()
+        ? el("div", { class: "btn-row" },
+            el("button", { class: "chip" + (s.voiceOn ? " on" : ""), onclick: () => { store.update({ voiceOn: !s.voiceOn }); renderSettings(main, navigate); } }, s.voiceOn ? "Voice on" : "Voice off"),
+            s.voiceOn ? el("button", { class: "btn ghost small", onclick: () => speak("Know first, then choose. This is the voice that will read to you.") }, "Hear a sample") : null,
+          )
+        : el("p", { class: "tiny" }, "This device does not offer speech; the words will wait in writing."),
+    ),
     el("div", { class: "card flat" },
       el("h2", {}, "The promises"),
       el("ul", { class: "muted", style: "padding-left:1.1rem" },
-        el("li", {}, "Named sources on every suggestion, so you never have to take Alma\u2019s word for anything."),
+        el("li", {}, "Named sources on every suggestion, so you never have to take Harta\u2019s word for anything."),
         el("li", {}, "No diagnosis and no symptom checking, so this app can never frighten you at midnight. It sends you to the right person with better questions instead."),
         el("li", {}, "Nutrition facts when you want them, never as a verdict: no calorie targets, no weight, no punishments, no streaks. A companion you can keep for years without it ever turning on you."),
         el("li", {}, "Your data never leaves this device because there is no server to leave to. Privacy here is physics, not a policy that can quietly change."),

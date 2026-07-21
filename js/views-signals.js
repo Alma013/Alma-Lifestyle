@@ -1,14 +1,15 @@
-// Alma · fasting (with safety gates) and signals (glucose, ketones, labs).
+// Harta · fasting (with safety gates) and signals (glucose, ketones, labs).
 // The rule of this file: numbers are shown kindly, trends over verdicts,
 // and nothing here ever interprets diagnostically. The doctor does that.
 
 import { el, toast, openModal, closeModal, sparkline } from "./ui.js";
-import { store, uid, todayISO, fmtDay, startFast, endFast, fastElapsedHours, addReading, toMmol, displayGlucose, latestMetabolicPair, mealResponseSummary } from "./store.js";
+import { store, uid, todayISO, fmtDay, startFast, endFast, adjustFastStart, fastElapsedHours, addReading, toMmol, displayGlucose, latestMetabolicPair, mealResponseSummary, localDayOf } from "./store.js";
 import { FAST_PROTOCOLS, FASTING_SAFETY } from "./data2.js";
 import { openWhy } from "./views-track.js";
 
 // ---------- fasting ----------
 let fastTick = null;
+export function leaveFasting() { clearInterval(fastTick); fastTick = null; }
 
 export function renderFasting(main) {
   clearInterval(fastTick);
@@ -24,7 +25,7 @@ export function renderFasting(main) {
       el("div", { class: "card" },
         ...FASTING_SAFETY.lines.map((l) => el("p", { class: "muted", style: "font-size:0.92rem" }, l)),
         el("div", { class: "notice warm" }, "If any line above is about you, close this page with a clear conscience. Eating regularly is a legitimate health strategy."),
-        el("button", { class: "btn", onclick: () => { store.mutate((st) => { st.fasting.safetyAccepted = true; }); renderFasting(main); } }, "I've read it, and it doesn't exclude me"),
+        el("button", { class: "btn", onclick: () => { store.mutate((st) => { st.fasting.safetyAccepted = true; }); renderFasting(main); } }, "I've checked: none of this is me"),
       ),
     );
     return;
@@ -84,23 +85,52 @@ export function renderFasting(main) {
       el("div", { class: "fast-dial" }, ring, timeEl, subEl),
       el("div", { class: "btn-row", style: "justify-content:center;margin-top:0.8rem" },
         active
-          ? el("button", { class: "btn", onclick: () => { clearInterval(fastTick); endFast(); toast("Fast ended and logged"); renderFasting(main); } }, "End the fast")
+          ? el("button", { class: "btn", onclick: () => {
+              openModal(
+                el("h2", {}, "End this fast?"),
+                el("p", { class: "muted" }, "It will be logged as it stands. A mis-tap here would lose a long fast, so Harta asks once."),
+                el("div", { class: "btn-row" },
+                  el("button", { class: "btn", onclick: () => { clearInterval(fastTick); endFast(); closeModal(); toast("Fast ended and logged"); renderFasting(main); } }, "End and log"),
+                  el("button", { class: "btn ghost", onclick: closeModal }, "Keep fasting"),
+                ),
+              );
+            } }, "End the fast")
           : el("button", { class: "btn", onclick: () => { startFast(); renderFasting(main); } }, "Start fasting now"),
+        active ? el("button", { class: "btn ghost small", onclick: () => {
+            const dt = el("input", { type: "datetime-local" });
+            const st = new Date(s.fasting.activeStart);
+            dt.value = new Date(st.getTime() - st.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+            openModal(
+              el("h2", {}, "When did it really start?"),
+              el("p", { class: "muted" }, "Dinner often ends before the timer begins. Set the honest start and the log stays true."),
+              el("div", { class: "field" }, dt),
+              el("button", { class: "btn", onclick: () => { if (dt.value) { adjustFastStart(new Date(dt.value).toISOString()); closeModal(); renderFasting(main); toast("Start time corrected"); } } }, "Save"),
+            );
+          } }, "Adjust start time") : null,
       ),
       el("p", { class: "tiny center", style: "margin-top:0.6rem" }, "Water, black coffee and plain tea are fine company for a fast. Feeling unwell always outranks the timer: eat."),
+    ),
+    el("div", { class: "card flat" },
+      el("h3", {}, "Your eating window"),
+      el("p", { class: "tiny" }, "Tell Harta when dinner usually ends and Today will show when the kitchen closes and reopens, live."),
+      (() => {
+        const inp = el("input", { type: "time", value: s.fasting.kitchenCloses || "19:30", "aria-label": "Time dinner usually ends" });
+        inp.addEventListener("change", () => { store.mutate((st) => { st.fasting.kitchenCloses = inp.value; }); toast("Window anchored at " + inp.value); });
+        return el("div", { class: "field", style: "max-width:10rem" }, el("label", {}, "Dinner usually ends at"), inp);
+      })(),
     ),
     el("div", { class: "card flat" },
       el("h3", {}, "Recent fasts"),
       log.length
         ? el("div", {}, ...log.map((f) => el("div", { class: "reading-row" },
             el("span", { class: "r-val" }, f.hours + " h"),
-            el("span", { class: "r-meta" }, fmtDay(f.start.slice(0, 10)) + " → " + fmtDay(f.end.slice(0, 10))),
+            el("span", { class: "r-meta" }, fmtDay(localDayOf(f.start)) + " → " + fmtDay(localDayOf(f.end))),
             el("span", {}),
           )))
         : el("p", { class: "muted" }, "No fasts logged yet. 12:12 tonight is a perfectly honourable start."),
     ),
     el("div", { class: "notice warm" },
-      "Longer water-only fasting exists, and Alma deliberately does not run a timer for it: beyond about 24 hours it belongs under medical supervision. If that path interests you, it starts with a conversation with your doctor, not with an app."),
+      "Longer water-only fasting exists, and Harta deliberately does not run a timer for it: beyond about 24 hours it belongs under medical supervision. If that path interests you, it starts with a conversation with your doctor, not with an app."),
   );
 }
 
@@ -125,7 +155,7 @@ export function renderSignals(main) {
     el("div", { class: "page-head" },
       el("span", { class: "eyebrow" }, "Your numbers, kindly"),
       el("h1", {}, "Signals"),
-      el("p", {}, "Glucose, ketones and lab results, read for patterns. Alma charts; your doctor interprets. ",
+      el("p", {}, "Glucose, ketones and lab results, read for patterns. Harta charts; your doctor interprets. ",
         el("button", { class: "link", onclick: () => openWhy("cgm") }, "Sensors without anxiety")),
     ),
     el("div", { class: "card" },
@@ -144,7 +174,7 @@ export function renderSignals(main) {
         el("button", { class: "link", onclick: () => openWhy("gki") }, "What they mean")) : null,
       el("div", { class: "btn-row", style: "margin-top:0.6rem" },
         el("button", { class: "btn", onclick: () => addReadingModal(main) }, "Add a reading"),
-        el("button", { class: "btn secondary", onclick: () => importCSVModal(main) }, "Import sensor CSV"),
+        el("button", { class: "btn secondary", onclick: () => openImportCSV(main) }, "Import sensor CSV"),
         el("button", { class: "btn ghost small", onclick: () => { store.mutate((st) => { st.signals.unit = st.signals.unit === "mmol" ? "mgdl" : "mmol"; }); renderSignals(main); } },
           "Show " + (s.signals.unit === "mmol" ? "mg/dL" : "mmol/L")),
       ),
@@ -161,7 +191,7 @@ export function renderSignals(main) {
     el("div", { class: "card flat" },
       el("div", { class: "card-title-row" }, el("h2", {}, "Lab results"),
         el("button", { class: "link", onclick: () => addLabModal(main) }, "Add")),
-      el("p", { class: "tiny" }, "HbA1c, lipids, CRP, vitamin D: type them in from your reports and watch the trend between check-ups. Bring the questions to the doctor; Alma keeps the timeline."),
+      el("p", { class: "tiny" }, "HbA1c, lipids, CRP, vitamin D: type them in from your reports and watch the trend between check-ups. Bring the questions to the doctor; Harta keeps the timeline."),
       s.signals.labs.length
         ? el("div", {}, ...groupLabs(s.signals.labs).map(([name, rows]) =>
             el("div", { style: "margin-bottom:0.8rem" },
@@ -182,7 +212,7 @@ export function renderSignals(main) {
         el("span", {}),
       )),
     )] : []),
-    el("p", { class: "tiny center" }, "Alma charts so the patterns jump out; your doctor interprets so nothing gets missed. That split is what makes these numbers useful instead of frightening. A reading that worries you is worth a call today, not Friday."),
+    el("p", { class: "tiny center" }, "Harta charts so the patterns jump out; your doctor interprets so nothing gets missed. That split is what makes these numbers useful instead of frightening. A reading that worries you is worth a call today, not Friday."),
   );
 }
 
@@ -221,13 +251,13 @@ function addReadingModal(main) {
 
 // CSV import: works with Libre/Dexcom/Keto-Mojo style exports or anything with
 // a date column and a numeric column. The user confirms which columns are which.
-function importCSVModal(main) {
+export function openImportCSV(main) {
   const file = el("input", { type: "file", accept: ".csv,text/csv" });
   const type = el("select", {}, el("option", { value: "glucose" }, "Glucose readings"), el("option", { value: "ketone" }, "Ketone readings"));
   const unit = el("select", {}, el("option", { value: "mmol" }, "mmol/L"), el("option", { value: "mgdl" }, "mg/dL"));
   openModal(
     el("h2", {}, "Import from a sensor export"),
-    el("p", { class: "muted" }, "Export a CSV from LibreView, Dexcom Clarity, Keto-Mojo or similar, then choose it here. Alma reads it right here on the device: your glucose history becomes insight for you, and never marketing data for anyone."),
+    el("p", { class: "muted" }, "Export a CSV from LibreView, Dexcom Clarity, Keto-Mojo or similar, then choose it here. Harta reads it right here on the device: your glucose history becomes insight for you, and never marketing data for anyone."),
     el("div", { class: "field" }, el("label", {}, "File"), file),
     el("div", { class: "field" }, el("label", {}, "These are"), type),
     el("div", { class: "field" }, el("label", {}, "Unit in the file"), unit),
@@ -238,7 +268,7 @@ function importCSVModal(main) {
         const text = await f.text();
         const n = importCSV(text, type.value, unit.value);
         closeModal(); renderSignals(main);
-        toast(n ? `Imported ${n} readings` : "No readable rows found; check the column layout");
+        toast(n ? `Imported ${n} readings` + (importCSV.lastDup ? `, skipped ${importCSV.lastDup} already here` : "") : (importCSV.lastDup ? "All of those readings are already here" : "No readable rows found; check the column layout"));
       } }, "Import"),
     ),
   );
@@ -247,6 +277,9 @@ function importCSVModal(main) {
 function importCSV(text, type, unit) {
   const lines = text.split(/\r?\n/).filter((l) => l.trim());
   if (lines.length < 2) return 0;
+  // semicolon-region exports: normalise the delimiter first
+  const semi = (lines[0].match(/;/g) || []).length > (lines[0].match(/,/g) || []).length;
+  if (semi) lines.forEach((l, i) => { lines[i] = l.replace(/;/g, ","); });
   // find the header row (Libre files start with a title line)
   let headIdx = lines.findIndex((l) => /time|date/i.test(l) && /,/.test(l));
   if (headIdx < 0) headIdx = 0;
@@ -255,13 +288,23 @@ function importCSV(text, type, unit) {
   let vCol = head.findIndex((h) => (type === "glucose" ? /glucose|sgv|bg\b/ : /ketone|bhb/).test(h));
   if (vCol < 0) vCol = head.findIndex((h, i) => i !== tCol && /value|reading|result|mmol|mg\/dl/.test(h));
   if (tCol < 0 || vCol < 0) return 0;
-  let n = 0;
+  let n = 0, dup = 0;
+  const parseWhen = (cell) => {
+    // DD-MM-YYYY or DD/MM/YYYY (Libre in AU/EU regions) parsed explicitly, never guessed
+    const m = cell.match(/^(\d{1,2})[-\/](\d{1,2})[-\/](\d{4})[ T](\d{1,2}):(\d{2})/);
+    if (m) return new Date(+m[3], +m[2] - 1, +m[1], +m[4], +m[5]);
+    return new Date(cell);
+  };
   store.mutate((s) => {
+    const seen = new Set(s.signals.readings.map((r) => r.type + "|" + r.t));
     for (let i = headIdx + 1; i < lines.length && n < 2000; i++) {
       const cells = splitCSV(lines[i]);
-      const t = new Date(cells[tCol]);
-      const v = parseFloat(cells[vCol]);
+      const t = parseWhen(cells[tCol]);
+      const v = parseFloat(String(cells[vCol]).replace(/^(\d+),(\d+)$/, "$1.$2"));
       if (isNaN(t.getTime()) || !v || v <= 0) continue;
+      const key = type + "|" + t.toISOString();
+      if (seen.has(key)) { dup++; continue; } // re-importing overlapping exports must not double history
+      seen.add(key);
       const stored = type === "glucose" ? toMmol(v, unit) : v;
       s.signals.readings.push({ id: uid(), t: t.toISOString(), type, v: Math.round(stored * 100) / 100, ctx: "", note: "import" });
       n++;
@@ -269,6 +312,7 @@ function importCSV(text, type, unit) {
     s.signals.readings.sort((a, b) => b.t.localeCompare(a.t));
     s.signals.readings = s.signals.readings.slice(0, 2000);
   });
+  importCSV.lastDup = dup;
   return n;
 }
 function splitCSV(line) {

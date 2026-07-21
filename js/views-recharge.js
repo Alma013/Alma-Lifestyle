@@ -1,12 +1,13 @@
-// Alma · the sanctuary: daily arrival, breath, sound, and the inner-power prompts.
+// Harta · the sanctuary: daily arrival, breath, sound, and the inner-power prompts.
 // This is the part of the app that recharges rather than organises.
 
 import { el, icon, toast, openModal, closeModal } from "./ui.js";
-import { store, todayISO, uid, greeting } from "./store.js";
-import { passageForToday, PROMPTS, SOUNDSCAPES, STEADY_TECHNIQUES, STEADY_NOTE, ACHIEVER_TECHNIQUES, ACHIEVER_NOTE } from "./data2.js";
+import { store, todayISO, uid, greeting, localDayOf } from "./store.js";
+import { passageForToday, eveningPassageForToday, PROMPTS, SOUNDSCAPES, STEADY_TECHNIQUES, STEADY_NOTE, ACHIEVER_TECHNIQUES, ACHIEVER_NOTE } from "./data2.js";
+import { speak, stopSpeaking, voiceAvailable } from "./voice.js";
+import { addJournalEntry } from "./idb.js";
 import { openWhy } from "./views-track.js";
 import { playScape, stopScape, playingId, chime } from "./audio.js";
-import { addJournalEntry } from "./idb.js";
 
 // ---------- the daily threshold ----------
 // Shown once per day, before anything practical. A moment, not a gate:
@@ -21,15 +22,21 @@ export function maybeShowArrival() {
     el("div", { class: "a-eyebrow" }, "Before the day"),
     el("p", { class: "a-passage" }, "“" + p.text + "”"),
     el("div", { class: "a-ref" }, p.ref),
-    el("button", { class: "btn", onclick: dismiss }, "Step in"),
+    el("div", { class: "btn-row", style: "justify-content:center" },
+      el("button", { class: "btn", onclick: dismiss }, "Step in"),
+      voiceAvailable() && s.voiceOn ? el("button", { class: "btn secondary", onclick: () => speak(p.text + ". " + p.ref) }, "Hear it") : null,
+    ),
     el("button", { class: "link a-skip", onclick: dismiss }, "Skip today"),
   );
   function dismiss() {
+    stopSpeaking();
     store.mutate((st) => { st.arrivalLast = today; });
     overlay.classList.add("leaving");
     setTimeout(() => overlay.remove(), 480);
   }
+  overlay.addEventListener("keydown", (e) => { if (e.key === "Escape") dismiss(); });
   document.body.append(overlay);
+  overlay.querySelector(".btn")?.focus();
 }
 
 // ---------- breathing ----------
@@ -46,6 +53,8 @@ const BREATH_PATTERNS = {
 };
 
 let breathTimer = null;
+let breathStartedAt = null;
+let creditOnLeave = null;
 function stopBreath() {
   if (breathTimer) { clearInterval(breathTimer.iv); clearTimeout(breathTimer.to); breathTimer = null; }
 }
@@ -59,7 +68,7 @@ export function renderRecharge(main, navigate) {
   let running = false;
   let minutes = 0;
 
-  const word = el("div", { class: "breath-word" }, "Ready");
+  const word = el("div", { class: "breath-word", role: "status", "aria-live": "polite" }, "Ready");
   const count = el("div", { class: "breath-count" }, "Three minutes is a real reset. One is still real.");
   const howLine = el("p", { class: "tiny center", style: "max-width:26rem;margin:0.5rem auto 0" }, BREATH_PATTERNS[pattern].how);
   const ring = el("div", { class: "breath-ring" }, word);
@@ -83,18 +92,25 @@ export function renderRecharge(main, navigate) {
     minutes = (Date.now() - startedAt) / 60000;
   }
 
+  const creditMinutes = () => {
+    if (!breathStartedAt) return;
+    const mins = Math.round((Date.now() - breathStartedAt) / 60000);
+    if (mins >= 1) store.mutate((st) => { st.sanctuaryMinutes += mins; });
+    breathStartedAt = null;
+  };
   const startBtn = el("button", { class: "btn", onclick: () => {
     if (running) {
-      running = false; stopBreath();
+      running = false; stopBreath(); creditMinutes();
       word.textContent = "Well held"; count.textContent = "";
       ring.className = "breath-ring";
       startBtn.textContent = "Begin again";
-      store.mutate((st) => { st.sanctuaryMinutes += Math.max(1, Math.round(minutes)); });
     } else {
       running = true; startBtn.textContent = "Finish";
-      runPhase(0, Date.now());
+      breathStartedAt = Date.now();
+      runPhase(0, breathStartedAt);
     }
   } }, "Begin");
+  creditOnLeave = creditMinutes;
 
   const patternChips = Object.entries(BREATH_PATTERNS).map(([id, p]) =>
     el("button", {
@@ -134,13 +150,80 @@ export function renderRecharge(main, navigate) {
   const prompt = PROMPTS[daySeed % PROMPTS.length];
   const promptArea = el("textarea", { placeholder: "Write here, or speak it in the journal. Nobody sees this but you." });
 
+  const echoCard = (() => {
+    if (store.get().echoLast === todayISO()) return null;
+    const today = new Date();
+    const candidates = [];
+    for (const j of store.get().journalIndex || []) {
+      if (j.preview) candidates.push({ t: j.t, text: j.preview, kind: "journal" });
+    }
+    for (const c of store.get().checkins || []) {
+      if (c.felt) candidates.push({ t: c.date + "T12:00:00", text: c.felt, kind: "check-in" });
+      else if (c.held) candidates.push({ t: c.date + "T12:00:00", text: c.held, kind: "check-in" });
+    }
+    let best = null;
+    for (const target of [30, 90, 365]) {
+      for (const c of candidates) {
+        const age = (today - new Date(c.t)) / 864e5;
+        if (Math.abs(age - target) <= 4 && (!best || Math.abs(age - target) < best.diff)) {
+          best = { ...c, diff: Math.abs(age - target), label: target === 30 ? "A month ago" : target === 90 ? "Three months ago" : "A year ago" };
+        }
+      }
+      if (best) break;
+    }
+    if (!best) return null;
+    return el("div", { class: "card flat" },
+      el("span", { class: "eyebrow" }, "From your own hand"),
+      el("p", { style: "font-family:var(--font-head);font-style:italic;margin:0.3rem 0" }, best.label + ", you wrote: “" + best.text + "”"),
+      el("div", { class: "btn-row" },
+        el("button", { class: "btn ghost small", onclick: () => navigate("#/journal") }, "Read it again"),
+        el("button", { class: "link", onclick: (e) => { store.mutate((st) => { st.echoLast = todayISO(); }); e.target.closest(".card").remove(); } }, "Not today"),
+      ),
+    );
+  })();
+
+  // ---- Vespers: the day gets an ending ----
+  const vespersCard = (() => {
+    if (new Date().getHours() < 20) return null;
+    if (store.get().vespersLast === todayISO()) return null;
+    const ev = eveningPassageForToday(todayISO());
+    const line = el("input", { type: "text", placeholder: "One good thing from today, however small" });
+    return el("div", { class: "card", style: "background:linear-gradient(170deg, var(--surface-2), var(--surface))" },
+      el("span", { class: "eyebrow" }, "Close the day"),
+      el("p", { style: "font-family:var(--font-head);font-style:italic;margin:0.4rem 0" }, "“" + ev.text + "” · " + ev.ref),
+      el("div", { class: "field" }, line),
+      el("div", { class: "btn-row" },
+        el("button", { class: "btn secondary small", onclick: async () => {
+          const v = line.value.trim();
+          if (v) {
+            await addJournalEntry({ type: "text", text: v, tags: ["gratitude"] });
+            store.mutate((st) => { st.journalIndex.unshift({ id: uid(), t: new Date().toISOString(), type: "text", preview: v.slice(0, 90), tags: ["gratitude"] }); });
+          }
+          store.mutate((st) => { st.vespersLast = todayISO(); });
+          toast(v ? "Kept. Sleep well." : "Good night.");
+          renderRecharge(main, navigate);
+        } }, "Close the day"),
+        el("button", { class: "btn ghost small", onclick: () => {
+          const scape = SOUNDSCAPES.find((x) => x.id === "night-rain");
+          if (scape) playScape(scape);
+          document.querySelector(".chip-row .chip:first-child")?.click();
+          toast("Night rain on. Breathe toward sleep.");
+        } }, "Breathe toward sleep"),
+        voiceAvailable() && s.voiceOn ? el("button", { class: "link", onclick: () => speak(ev.text + ". " + ev.ref) }, "Listen") : null,
+      ),
+    );
+  })();
+
   main.replaceChildren(
+    ...(vespersCard ? [vespersCard] : []),
+    ...(echoCard ? [echoCard] : []),
     el("div", { class: "page-head" },
       el("span", { class: "eyebrow" }, "The sanctuary"),
       el("h1", {}, greet + (s.profile.name ? ", " + s.profile.name : "")),
       el("p", {}, "Ten quiet minutes that put energy back. Breath first, sound if you want it, one honest line if it comes."),
       el("p", { class: "tiny", style: "font-family:var(--font-head);font-style:italic;font-size:0.92rem;margin-top:0.5rem" },
-        "“" + passage.text + "” · " + passage.ref),
+        "“" + passage.text + "” · " + passage.ref,
+        voiceAvailable() && s.voiceOn ? el("button", { class: "link", style: "margin-left:0.5rem", onclick: () => speak(passage.text + ". " + passage.ref) }, "Listen") : null),
     ),
     el("div", { class: "card" },
       el("div", { class: "card-title-row" }, el("h2", {}, "Breathe"),
@@ -172,21 +255,66 @@ export function renderRecharge(main, navigate) {
       el("h2", {}, "For the inner power"),
       el("blockquote", {}, prompt),
       el("div", { class: "field" }, promptArea),
-      el("div", { class: "btn-row" },
-        el("button", { class: "btn secondary small", onclick: async () => {
-          const text = promptArea.value.trim();
-          if (!text) { toast("Nothing written yet"); return; }
-          await addJournalEntry({ type: "text", text, tags: ["inner-power"], prompt });
-          store.mutate((st) => { st.journalIndex.unshift({ id: uid(), t: new Date().toISOString(), type: "text", preview: text.slice(0, 90), tags: ["inner-power"] }); });
-          promptArea.value = "";
-          toast("Kept in your journal");
-        } }, "Keep this"),
-      ),
+      (() => {
+        // three honest ways in: type it, speak it, or write on paper and photograph the page
+        const paperInput = el("input", { type: "file", accept: "image/*", capture: "environment", style: "display:none" });
+        paperInput.addEventListener("change", async () => {
+          const f = paperInput.files[0];
+          if (!f) return;
+          await addJournalEntry({ type: "photo", blob: f, text: "Written by hand", tags: ["inner-power", "paper"], prompt });
+          store.mutate((st) => { st.journalIndex.unshift({ id: uid(), t: new Date().toISOString(), type: "photo", preview: "A handwritten page", tags: ["inner-power"] }); });
+          toast("Your page is kept, handwriting and all.");
+        });
+        let rec = null, recChunks = [];
+        const recLabel = el("span", {}, "Speak it");
+        const recBtn = el("button", { class: "btn ghost small", onclick: async () => {
+          if (rec && rec.state === "recording") { rec.stop(); return; }
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            recChunks = [];
+            rec = new MediaRecorder(stream);
+            rec.ondataavailable = (e) => recChunks.push(e.data);
+            rec.onstop = async () => {
+              stream.getTracks().forEach((t) => t.stop());
+              const blob = new Blob(recChunks, { type: rec.mimeType || "audio/webm" });
+              await addJournalEntry({ type: "audio", blob, text: "", tags: ["inner-power", "voice"], prompt });
+              store.mutate((st) => { st.journalIndex.unshift({ id: uid(), t: new Date().toISOString(), type: "audio", preview: "A voice note", tags: ["inner-power"] }); });
+              recLabel.textContent = "Speak it";
+              recBtn.classList.remove("danger");
+              toast("Voice note kept in your journal.");
+            };
+            rec.start();
+            recLabel.replaceChildren(el("span", { class: "record-dot" }), " Recording… tap to keep");
+            recBtn.classList.add("danger");
+          } catch { toast("Microphone permission was declined"); }
+        } }, recLabel);
+        return el("div", { class: "btn-row" },
+          el("button", { class: "btn secondary small", onclick: async () => {
+            const text = promptArea.value.trim();
+            if (!text) { toast("Nothing written yet"); return; }
+            await addJournalEntry({ type: "text", text, tags: ["inner-power"], prompt });
+            store.mutate((st) => { st.journalIndex.unshift({ id: uid(), t: new Date().toISOString(), type: "text", preview: text.slice(0, 90), tags: ["inner-power"] }); });
+            promptArea.value = "";
+            toast("Kept in your journal");
+          } }, "Keep this"),
+          recBtn,
+          el("button", { class: "btn ghost small", onclick: () => paperInput.click() }, "Photograph the page"),
+          voiceAvailable() && s.voiceOn ? el("button", { class: "link", onclick: () => speak(prompt) }, "Read the prompt to me") : null,
+          paperInput,
+        );
+      })(),
       el("p", { class: "tiny" }, "Prompts follow one idea: the hardest moments are also the clearest. What they showed you is yours to keep."),
     ),
     el("div", { class: "card flat" },
       el("h3", {}, "Then, the details"),
-      el("p", { class: "muted" }, "Tonight's dinner, the week's plan and your numbers are all waiting, and none of them are urgent. Batteries first."),
+      (() => {
+        const dk = ["mon","tue","wed","thu","fri","sat","sun"][(new Date().getDay() + 6) % 7];
+        const rid = store.get().week?.days[dk]?.recipeId;
+        const recipes = store.get().week ? null : null;
+        return el("p", { class: "muted" }, rid
+          ? "Tonight: a dinner is already chosen and waiting on Today. The week's plan and your numbers are there too, and none of it is urgent. Batteries first."
+          : "Tonight's dinner, the week's plan and your numbers are all waiting, and none of them are urgent. Batteries first.");
+      })(),
       el("div", { class: "btn-row" },
         el("button", { class: "btn secondary small", onclick: () => navigate("#/today") }, "Today"),
         el("button", { class: "btn ghost small", onclick: () => navigate("#/plan") }, "The plan"),
@@ -199,6 +327,7 @@ export function renderRecharge(main, navigate) {
 const STRENGTH_LABEL = { strong: ["evidence-strong", "strong evidence"], emerging: ["evidence-emerging", "emerging evidence"], thin: ["evidence-thin", "practice wisdom"] };
 function openSteady(t) {
   const [cls, label] = STRENGTH_LABEL[t.strength];
+  const readable = t.name + ". For " + t.when + ". " + t.steps.join(" ") + " " + t.why;
   openModal(
     el("h2", {}, t.name),
     el("span", { class: "tag " + cls }, label),
@@ -206,7 +335,8 @@ function openSteady(t) {
     el("ol", { class: "method", style: "margin-top:0.6rem" }, t.steps.map((st) => el("li", {}, st))),
     el("p", { class: "muted", style: "margin-top:0.6rem" }, t.why),
     el("div", { class: "source-line" }, "Source: " + t.source + "."),
+    voiceAvailable() && store.get().voiceOn ? el("button", { class: "btn secondary small", style: "margin-top:0.7rem", onclick: () => speak(readable) }, "Read it to me") : null,
   );
 }
 
-export function leaveRecharge() { stopBreath(); }
+export function leaveRecharge() { stopBreath(); creditOnLeave?.(); creditOnLeave = null; stopSpeaking(); }

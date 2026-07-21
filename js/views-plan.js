@@ -1,9 +1,9 @@
-// Alma · views: onboarding, today, plan, groceries, recipes
+// Harta · views: onboarding, today, plan, groceries, recipes
 
 import { el, icon, openModal, closeModal, toast } from "./ui.js";
 import { RECIPES, SECTIONS, HABITS, NUDGES } from "./data.js";
 import {
-  bodyNeeds, greeting, displayGlucose, eligibleRecipes,
+  bodyNeeds, eatingWindow, fmtClock, sumQuantities, localDayOf, greeting, displayGlucose, eligibleRecipes,
   store, DAY_KEYS, DAY_NAMES, todayISO, dayKeyToday, dateOfDayKey, fmtDay,
   recipeById, startNewWeek, swapDay, groceryList, toggleHabit,
 } from "./store.js";
@@ -12,8 +12,11 @@ import {
 export function renderOnboarding(main, navigate) {
   const s = store.get();
   let step = s.disclaimerAccepted ? 1 : 0;
+  const existing = s.profile;
   const draft = {
-    name: "", adults: 2, kids: 2, allergies: [], busyNights: [], fishOk: true, meatOk: true,
+    name: existing.name || "", adults: existing.adults || 2, kids: existing.kids ?? 2,
+    allergies: [...(existing.allergies || [])], busyNights: [...(existing.busyNights || [])],
+    fishOk: existing.fishOk !== false, meatOk: existing.meatOk !== false,
   };
 
   const steps = [renderWelcome, renderHousehold, renderNights, renderDone];
@@ -25,12 +28,12 @@ export function renderOnboarding(main, navigate) {
   function renderWelcome() {
     return el("div", {},
       el("img", { src: "icons/icon.svg", class: "brand-mark-lg", alt: "" }),
-      el("h1", { class: "center" }, "Alma"),
-      el("p", { class: "center muted" }, "Know first, then choose."),
+      el("h1", { class: "center" }, "Harta"),
+      el("p", { class: "center muted" }, "The map to living well. Know first, then choose."),
       el("div", { class: "card", style: "margin-top:1.2rem" },
         el("h3", {}, "Three promises, and what they buy you"),
-        el("p", { class: "muted" }, "Every suggestion arrives with its reason and a named source, so you choose from knowledge instead of headlines. Alma never diagnoses, never prescribes and never mentions your weight, which means you get clarity here without the 2 am anxiety spiral."),
-        el("p", { class: "muted" }, "Your doctor stays your doctor. For symptoms, results, medication and supplements, Alma\u2019s job is to send you into the appointment with sharper questions and a cleaner timeline, so the ten minutes you get are worth twenty."),
+        el("p", { class: "muted" }, "Every suggestion arrives with its reason and a named source, so you choose from knowledge instead of headlines. Harta never diagnoses, never prescribes and never mentions your weight, which means you get clarity here without the 2 am anxiety spiral."),
+        el("p", { class: "muted" }, "Your doctor stays your doctor. For symptoms, results, medication and supplements, Harta\u2019s job is to send you into the appointment with sharper questions and a cleaner timeline, so the ten minutes you get are worth twenty."),
         el("p", { class: "muted" }, "Everything lives on this device only. No account to create, no password to forget, and nothing to hack, leak or sell: your meals, numbers and letters stay as private as the drawer beside your bed."),
       ),
       el("button", {
@@ -42,7 +45,7 @@ export function renderOnboarding(main, navigate) {
 
   function renderHousehold() {
     const allergyInput = el("input", { type: "text", placeholder: "e.g. peanuts, prawns (comma separated)" });
-    const nameInput = el("input", { type: "text", placeholder: "What should Alma call you?" });
+    const nameInput = el("input", { type: "text", placeholder: "What should Harta call you?" });
     const counter = (label, key, min, max) => {
       const val = el("span", { class: "slider-val" }, String(draft[key]));
       return el("div", { class: "field" },
@@ -94,7 +97,7 @@ export function renderOnboarding(main, navigate) {
         onclick: () => {
           draft.busyNights = chips.filter(([, c]) => c.classList.contains("on")).map(([dk]) => dk);
           store.mutate((st) => { Object.assign(st.profile, draft); st.onboarded = true; });
-          startNewWeek();
+          if (!store.get().week) startNewWeek(); // redoing setup never throws away the current week
           step = 3; paint();
         },
       }, "Build my first week"),
@@ -164,6 +167,45 @@ export function renderToday(main, navigate) {
     ),
 
     (() => {
+      const w = eatingWindow();
+      if (!w && !s.fasting.activeStart) return null;
+      if (w && w.mode === "fasting") {
+        const h = Math.floor(w.minsToOpen / 60), m2 = w.minsToOpen % 60;
+        return el("div", { class: "notice", style: "cursor:pointer", onclick: () => navigate("#/fasting") },
+          el("strong", {}, "Fasting now. "),
+          w.canEat ? "The window is open: you can eat, gently, whenever you choose."
+            : `The kitchen reopens at ${fmtClock(w.opens)}: ${h ? h + " h " : ""}${m2} min to go. Water, black coffee and plain tea are welcome company.`);
+      }
+      if (w && w.mode === "open") {
+        return el("div", { class: "notice", style: "cursor:pointer", onclick: () => navigate("#/fasting") },
+          el("strong", {}, "Eating window open. "),
+          `The kitchen closes at ${fmtClock(w.closes)} tonight, in about ${Math.floor(w.minsToClose / 60)} h ${w.minsToClose % 60} min.`);
+      }
+      if (w && w.mode === "closed") {
+        const h = Math.floor(w.minsToOpen / 60), m2 = w.minsToOpen % 60;
+        return el("div", { class: "notice", style: "cursor:pointer", onclick: () => navigate("#/fasting") },
+          el("strong", {}, "Kitchen closed for the night. "),
+          w.canEat ? "It can reopen whenever you choose." : `It reopens at ${fmtClock(w.opens)}: ${h ? h + " h " : ""}${m2} min to go.`);
+      }
+      return null;
+    })(),
+    (() => {
+      // the kept word: the kind thing you asked of this week, held where you can see it
+      const c = s.checkins[0];
+      if (!c || !c.kind || c.kindKept) return null;
+      if ((Date.now() - new Date(c.date)) > 8 * 864e5) return null;
+      return el("div", { class: "card flat" },
+        el("p", { class: "muted", style: "margin:0" },
+          el("strong", {}, "Your one kind thing this week: "), `“${c.kind}”`),
+        el("div", { class: "btn-row", style: "margin-top:0.5rem" },
+          el("button", { class: "btn secondary small", onclick: () => {
+            store.mutate((st) => { st.checkins[0].kindKept = todayISO(); });
+            toast("Kept. That is the whole assignment.");
+            renderToday(main, navigate);
+          } }, "Done, and it was kind")),
+      );
+    })(),
+    (() => {
       const g = s.signals.readings.find((r) => r.type === "glucose");
       const k = s.signals.readings.find((r) => r.type === "ketone");
       return el("div", { class: "card" },
@@ -172,10 +214,10 @@ export function renderToday(main, navigate) {
         el("p", { class: "muted", style: "margin-bottom:0.5rem" },
           g || k
             ? "Latest: " + [g && `glucose ${displayGlucose(g.v).v} ${displayGlucose(g.v).unit}`, k && `ketones ${k.v} mmol/L`].filter(Boolean).join(" · ")
-            : "Wearing a sensor, or prick-testing? Bring the numbers in and Alma reads them kindly: glucose, ketones, GKI, labs."),
+            : "Wearing a sensor, or prick-testing? Bring the numbers in and Harta reads them kindly: glucose, ketones, GKI, labs."),
         el("div", { class: "btn-row" },
           el("button", { class: "btn secondary small", onclick: () => navigate("#/signals") }, "Add a reading"),
-          el("button", { class: "btn ghost small", onclick: () => navigate("#/signals") }, "Import sensor CSV"),
+          el("button", { class: "btn ghost small", onclick: () => { navigate("#/signals"); setTimeout(() => import("./views-signals.js").then((m) => m.openImportCSV(document.getElementById("main"))), 150); } }, "Import sensor CSV"),
         ),
       );
     })(),
@@ -211,24 +253,49 @@ export function renderPlan(main, navigate) {
     return renderPlan(main, navigate);
   }
   const dk = dayKeyToday();
-  const rows = DAY_KEYS.map((k) => {
+  const moveMeal = (from, to) => {
+    store.mutate((st) => {
+      const a = st.week.days[from], b = st.week.days[to];
+      st.week.days[from] = b; st.week.days[to] = a;
+    });
+    renderPlan(main, navigate);
+  };
+  const rows = DAY_KEYS.map((k, idx) => {
     const slot = s.week.days[k];
     const r = slot?.recipeId ? recipeById(slot.recipeId) : null;
-    return el("div", { class: "day-row" + (k === dk ? " today-row" : "") },
+    const row = el("div", {
+      class: "day-row" + (k === dk ? " today-row" : ""),
+      draggable: "true",
+      dataset: { day: k },
+    },
       el("span", { class: "d" }, DAY_NAMES[k].slice(0, 3), el("small", {}, fmtDay(dateOfDayKey(s.week.start, k)))),
       r
         ? el("span", {},
             el("button", { class: "meal-name", onclick: () => openRecipe(r) }, r.name),
             el("span", { class: "meal-sub" }, slot.leftover ? "Leftovers from the batch pot" : `${r.total} min · serves ${r.serves}` + (store.get().eatingStyle === "keto" && r.netCarbs ? ` · ~${r.netCarbs} g net carbs` : "")))
         : el("span", { class: "meal-name empty" }, "Nothing planned"),
-      el("button", { class: "btn ghost small", "aria-label": "Swap " + DAY_NAMES[k], onclick: () => { swapDay(k); renderPlan(main, navigate); } }, icon("swap", 16)),
+      el("span", { class: "row-actions" },
+        el("button", { class: "btn ghost small", "aria-label": "Move " + DAY_NAMES[k] + " dinner earlier", disabled: idx === 0, onclick: () => moveMeal(k, DAY_KEYS[idx - 1]) }, "↑"),
+        el("button", { class: "btn ghost small", "aria-label": "Move " + DAY_NAMES[k] + " dinner later", disabled: idx === 6, onclick: () => moveMeal(k, DAY_KEYS[idx + 1]) }, "↓"),
+        el("button", { class: "btn ghost small", "aria-label": "Swap " + DAY_NAMES[k] + " for another recipe", onclick: () => { swapDay(k); renderPlan(main, navigate); } }, icon("swap", 16)),
+      ),
     );
+    row.addEventListener("dragstart", (e) => { e.dataTransfer.setData("text/plain", k); row.classList.add("dragging"); });
+    row.addEventListener("dragend", () => row.classList.remove("dragging"));
+    row.addEventListener("dragover", (e) => { e.preventDefault(); row.classList.add("drop-target"); });
+    row.addEventListener("dragleave", () => row.classList.remove("drop-target"));
+    row.addEventListener("drop", (e) => {
+      e.preventDefault();
+      const from = e.dataTransfer.getData("text/plain");
+      if (from && from !== k) moveMeal(from, k);
+    });
+    return row;
   });
 
   const pool = eligibleRecipes();
   const poolWarning = pool.length < 7
     ? el("div", { class: "notice warm" },
-        `Your current combination of way of eating, dietary keeps and exclusions leaves ${pool.length} recipe${pool.length === 1 ? "" : "s"}, and a full week needs at least seven. Loosen one filter in `,
+        `Your way of eating, dietary preferences and exclusions leave ${pool.length} recipe${pool.length === 1 ? "" : "s"}, and a full week needs at least seven. Loosen one filter in `,
         el("button", { class: "link", onclick: () => navigate("#/settings") }, "Settings"),
         " and plan a new week.")
     : null;
@@ -253,7 +320,7 @@ export function renderPlan(main, navigate) {
     el("div", { class: "page-head" },
       el("span", { class: "eyebrow" }, "Week of " + fmtDay(s.week.start)),
       el("h1", {}, "The plan"),
-      el("p", {}, "Whole food, family sized, built around your rushed nights. Swap anything."),
+      el("p", {}, "Whole food, family sized, built around your rushed nights. Drag a dinner onto another day, or use the arrows; swap anything."),
     ),
     ...(poolWarning ? [poolWarning] : []),
     needsCard,
@@ -296,7 +363,7 @@ export function renderGroceries(main, navigate) {
           box,
           el("label", { for: "g-" + item.key, title: "For: " + item.recipes.join(", ") }, item.n,
             item.pantry ? el("span", {}, " ", el("span", { class: "pantry-note" }, "check pantry")) : null),
-          el("span", { class: "q" }, item.qs.join(" + ")),
+          el("span", { class: "q" }, sumQuantities(item.qs)),
         );
         return row;
       }),
@@ -334,7 +401,7 @@ export function renderGroceries(main, navigate) {
 export function renderRecipes(main) {
   const s = store.get();
   let activeTag = null;
-  const TAGS = [["quick", "Under 25 min"], ["kidsafe", "Kid friendly"], ["veg", "Vegetarian"], ["vegan", "Vegan"], ["gf", "Gluten free"], ["keto", "Ketogenic"], ["nosugar", "No added sugar"], ["fish", "Fish"], ["legume", "Legumes"], ["batch", "Batch and freeze"], ["romanian", "Romanian"]];
+  const TAGS = [["quick", "Quick: 25 min of your hands or less"], ["kidsafe", "Kid friendly"], ["veg", "Vegetarian"], ["vegan", "Vegan"], ["gf", "Gluten free"], ["keto", "Ketogenic"], ["nosugar", "No added sugar"], ["fish", "Fish"], ["legume", "Legumes"], ["batch", "Batch and freeze"], ["romanian", "Romanian"]];
 
   function paint() {
     const list = RECIPES.filter((r) => !activeTag || r.tags.includes(activeTag));
@@ -396,7 +463,7 @@ export function openRecipe(r) {
       r.tags.includes("nosugar") && el("span", { class: "tag" }, "no added sugar"),
     ),
     r.macros && el("p", { class: "tiny", style: "margin:-0.2rem 0 0.8rem" },
-      `Per serve, approximately: ${r.macros.kcal} kcal · protein ${r.macros.protein} g · fat ${r.macros.fat} g · carbs ${r.macros.carbs} g (sugars ${r.macros.sugars} g) · fibre ${r.macros.fibre} g. Computed from the listed quantities against published food-composition data (AFCD and USDA); rounded, a guide rather than a lab result.`),
+      `Per serve, approximately: ${Math.round(r.macros.kcal * 4.184 / 10) * 10} kJ (${r.macros.kcal} kcal) · protein ${r.macros.protein} g · fat ${r.macros.fat} g · carbs ${r.macros.carbs} g (sugars ${r.macros.sugars} g) · fibre ${r.macros.fibre} g. Computed from the listed quantities against published food-composition data (AFCD and USDA); rounded, a guide rather than a lab result.`),
     el("h3", {}, "Ingredients"),
     el("ul", { class: "ingredients" }, r.ingredients.map((i) => {
       const warn = ingredientWarning(i.n);

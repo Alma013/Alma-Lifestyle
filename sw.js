@@ -1,5 +1,5 @@
-// Alma · service worker: offline app shell, network-first with cache fallback.
-const CACHE = "alma-v6";
+// Harta · service worker: offline app shell, network-first with cache fallback.
+const CACHE = "alma-v7";
 const ASSETS = [
   "./", "./index.html", "./css/styles.css", "./manifest.webmanifest",
   "./js/app.js", "./js/store.js", "./js/ui.js", "./js/data.js", "./js/data2.js",
@@ -31,6 +31,7 @@ self.addEventListener("fetch", (e) => {
         }
         return res;
       })
-      .catch(() => caches.match(e.request))
+      .catch(() => caches.match(e.request).then((r) =>
+        r || (e.request.mode === "navigate" ? caches.match("./index.html") : Response.error())))
   );
 });

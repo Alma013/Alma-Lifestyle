@@ -1,6 +1,6 @@
 {
-  "name": "Alma: the map to living well",
-  "short_name": "Alma",
+  "name": "Harta: the map to living well",
+  "short_name": "Harta",
   "description": "Whole food meal plans, gentle habits, and the evidence behind every suggestion. Private by design.",
   "start_url": "./index.html",
   "scope": "./",
