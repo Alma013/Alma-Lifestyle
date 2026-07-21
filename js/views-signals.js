@@ -5,7 +5,7 @@
 import { el, toast, openModal, closeModal, sparkline } from "./ui.js";
 import { store, uid, todayISO, fmtDay, startFast, endFast, adjustFastStart, fastElapsedHours, addReading, toMmol, displayGlucose, latestMetabolicPair, mealResponseSummary, localDayOf } from "./store.js";
 import { FAST_PROTOCOLS, FASTING_SAFETY } from "./data2.js";
-import { interpretGlucose, interpretKetone, interpretGKI, interpretLab, LAB_GUIDE, personalGlucose } from "./interpret.js";
+import { interpretGlucose, interpretKetone, interpretGKI, interpretLab, LAB_GUIDE, personalGlucose, personalKetone } from "./interpret.js";
 import { openWhy } from "./views-track.js";
 
 // ---------- fasting ----------
@@ -188,7 +188,7 @@ export function renderSignals(main) {
         const pg = personalGlucose(latestG.v, latestG.ctx || "fasting", readings);
         cards.push([`Glucose ${displayGlucose(latestG.v).v} ${displayGlucose(latestG.v).unit}` + (latestG.ctx ? ` (${latestG.ctx === "post" ? "after a meal" : latestG.ctx})` : ""), gi, pg]);
       }
-      if (latestK) cards.push([`Ketones ${latestK.v} mmol/L`, interpretKetone(latestK.v), null]);
+      if (latestK) cards.push([`Ketones ${latestK.v} mmol/L`, interpretKetone(latestK.v), personalKetone(latestK.v, readings)]);
       if (pair) cards.push([`GKI ${pair.gki}`, interpretGKI(pair.gki), null]);
       return el("div", { class: "card" },
         el("h2", {}, "What your numbers are saying"),

@@ -74,7 +74,8 @@ function renderProgress(s) {
   return el("div", {},
     el("h2", { style: "margin-top:1.4rem" }, "How it's felt"),
     el("p", { class: "muted" }, "Rated 1 to 5 at each check-in. No weight here, by design: energy is the honest scoreboard. ",
-      el("button", { class: "link", onclick: () => openWhy("weight-free") }, "Why no weight?")),
+      el("button", { class: "link", onclick: () => openWhy("weight-free") }, "Why no weight?"),
+      s.checkins[0] ? el("button", { class: "link", style: "margin-left:0.5rem", onclick: () => editLatestCheckin() }, "Edit the latest") : null),
     card("Energy", "energy"),
     card("Sleep", "sleep"),
     card("Mood", "mood"),
@@ -84,6 +85,32 @@ function renderProgress(s) {
           entries.slice(-4).reverse().map((c) =>
             c.felt ? el("p", { class: "muted" }, el("strong", {}, fmtDay(c.date) + ": "), c.felt) : null))
       : null,
+  );
+}
+
+// the latest check-in stays editable: a rating given at 9 pm can be rethought at 9 am
+function editLatestCheckin() {
+  const c = store.get().checkins[0];
+  if (!c) return;
+  const draft = { energy: c.energy, sleep: c.sleep, mood: c.mood, felt: c.felt || "" };
+  const slider = (key, label) => {
+    const val = el("span", { class: "slider-val" }, String(draft[key]));
+    const input = el("input", { type: "range", min: 1, max: 5, step: 1, value: draft[key], "aria-label": label });
+    input.addEventListener("input", () => { draft[key] = Number(input.value); val.textContent = input.value; });
+    return el("div", { class: "field" }, el("label", {}, label), el("div", { class: "slider-row" }, input, val));
+  };
+  const felt = el("textarea", { placeholder: "What felt different\u2026" });
+  felt.value = draft.felt;
+  openModal(
+    el("h2", {}, "Edit the check-in of " + fmtDay(c.date)),
+    slider("energy", "Energy"), slider("sleep", "Sleep"), slider("mood", "Mood"),
+    el("div", { class: "field" }, el("label", {}, "In your words"), felt),
+    el("button", { class: "btn", onclick: () => {
+      store.mutate((st) => { Object.assign(st.checkins[0], draft, { felt: felt.value }); });
+      closeModal(); toast("Updated. Second thoughts are allowed here.");
+      const main = document.getElementById("main");
+      renderTrack(main, (h) => (location.hash = h));
+    } }, "Save"),
   );
 }
 

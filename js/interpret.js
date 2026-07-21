@@ -57,11 +57,35 @@ export function interpretGlucose(vMmol, ctx) {
   return out;
 }
 
+export function personalKetone(v, history) {
+  const out = {};
+  if (v < 0.5) out.headline = `Your reading is ${v} mmol/L: ${Math.round((0.5 - v) * 10) / 10} below the ketosis threshold of 0.5.`;
+  else if (v < 1.5) out.headline = `Your reading is ${v} mmol/L: inside light nutritional ketosis (0.5 to 1.5).`;
+  else if (v <= 3) out.headline = `Your reading is ${v} mmol/L: in the deeper range (1.5 to 3).`;
+  else out.headline = `Your reading is ${v} mmol/L: ${Math.round((v - 3) * 10) / 10} above the 3.0 line where attention is due.`;
+  const same = (history || []).filter((r) => r.type === "ketone");
+  const wk = same.slice(0, 7), prior = same.slice(7, 14);
+  const avg = (a) => a.length ? Math.round((a.reduce((x, y) => x + y.v, 0) / a.length) * 100) / 100 : null;
+  if (wk.length >= 3) {
+    const a1 = avg(wk), a0 = avg(prior);
+    out.trend = a0
+      ? `Your last ${wk.length} readings average ${a1}, ${a1 > a0 ? "up from" : a1 < a0 ? "down from" : "level with"} ${a0} before` + (a1 > a0 ? ": ketosis is deepening." : a1 < a0 ? ": the door is easing shut; check the quiet carbs." : ".")
+      : `Your last ${wk.length} readings average ${a1}.`;
+  }
+  return out;
+}
+
 export function interpretKetone(vMmol, hasDiabetes) {
   const v = vMmol;
   const out = { actions: [], source: "Nutritional-ketosis ranges (Volek and Phinney); DKA thresholds from diabetes guidance" };
-  if (v < 0.5) { out.band = "Not in ketosis"; out.plain = "Below 0.5 mmol/L the body is running mostly on glucose. If ketosis is your aim, the door is not open yet; if it is not your aim, this is simply normal."; out.actions = ["If you are chasing ketosis: it usually takes two to four consistent days under about 20 to 50 g carbs.", "If you are not: nothing to do."]; }
-  else if (v < 1.5) { out.band = "Light nutritional ketosis"; out.plain = "Between 0.5 and 1.5 mmol/L is light nutritional ketosis: the range most keto eaters live in, day to day."; out.actions = ["This is the working range; consistency matters more than depth.", "Salt, water and vegetables keep this range comfortable."]; }
+  if (v < 0.5) { out.band = "Not in ketosis"; out.plain = "Below 0.5 mmol/L the body is running mostly on glucose. If ketosis is your aim, the door is not open yet; if it is not your aim, this is simply normal.";
+    out.why = ["The usual suspects when keto eating still reads low: quiet carbs (sauces, milk in coffees, fruit portions), a recent meal (ketones dip after eating), or simply the first days of adaptation.", "Hard exercise the day before can temporarily lower a morning reading too."];
+    out.avoid = ["Cutting deeper on the strength of one reading.", "Urine strips as the referee after the first weeks: they fade as the body starts using ketones rather than spilling them."];
+    out.actions = ["If you are chasing ketosis: it usually takes two to four consistent days under about 20 to 50 g carbs.", "Measure at a consistent hour, mornings before food tell the truest story.", "If you are not chasing it: nothing to do."]; }
+  else if (v < 1.5) { out.band = "Light nutritional ketosis"; out.plain = "Between 0.5 and 1.5 mmol/L is light nutritional ketosis: the range most keto eaters live in, day to day.";
+    out.why = ["This is what steady low-carb eating produces once the body has switched fuel lines; the number breathes with meals, sleep and exercise, which is normal."];
+    out.avoid = ["Chasing higher numbers for their own sake: depth has no proven bonus for everyday goals, and the chase invites needless restriction."];
+    out.actions = ["This is the working range; consistency matters more than depth.", "Salt, water and vegetables keep this range comfortable."]; }
   else if (v <= 3) { out.band = "Deeper nutritional ketosis"; out.plain = "Between 1.5 and 3 mmol/L is the deeper range often targeted in therapeutic contexts. Fine when it is intentional, fed and supervised."; out.actions = ["If this depth is intentional, keep your care team in the loop.", "Hydration and electrolytes matter more down here."]; }
   else { out.band = "High"; out.urgent = true; out.plain = "Above 3 mmol/L deserves attention. In people with diabetes, high ketones with high glucose can signal ketoacidosis, which is an emergency. In prolonged fasting without diabetes it can still mean the body is under real strain.";
     out.why = ["Ketones climb this high when the body has had almost no carbohydrate or insulin signal for a long stretch: deep fasting, illness with poor eating, or insulin deficiency.", "Dehydration concentrates the reading further."];
