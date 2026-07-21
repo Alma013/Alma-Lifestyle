@@ -289,7 +289,8 @@ export function swapDay(dayKey) {
     }
     if (!pool.length) return;
     const next = pool[Math.floor(Math.random() * pool.length)];
-    s.week.days[dayKey] = { recipeId: next.id };
+    const keep = s.week.days[dayKey] || {};
+    s.week.days[dayKey] = { recipeId: next.id, bf: keep.bf, lunch: keep.lunch }; // dinner changes; the day's other meals stay
     // ticks are kept: half a shop should survive a dinner swap
   });
 }

@@ -376,7 +376,10 @@ export function renderPlan(main, navigate) {
     : null;
   const needs = bodyNeeds();
   const planTonight = (rid) => {
-    store.mutate((st) => { st.week.days[dk] = { recipeId: rid }; st.week.checked = {}; });
+    store.mutate((st) => {
+      const keep = st.week.days[dk] || {};
+      st.week.days[dk] = { recipeId: rid, bf: keep.bf, lunch: keep.lunch };
+    });
     renderPlan(main, navigate);
   };
   const needsCard = el("div", { class: "card" },

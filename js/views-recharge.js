@@ -2,7 +2,7 @@
 // This is the part of the app that recharges rather than organises.
 
 import { el, icon, toast, openModal, closeModal } from "./ui.js";
-import { store, todayISO, uid, greeting, localDayOf, claimMilestone } from "./store.js";
+import { store, todayISO, uid, greeting, localDayOf, claimMilestone, recipeById } from "./store.js";
 import { passageForToday, eveningPassageForToday, PROMPTS, SOUNDSCAPES, SOUND_GROUPS, STEADY_TECHNIQUES, STEADY_NOTE, ACHIEVER_TECHNIQUES, ACHIEVER_NOTE } from "./data2.js";
 import { speak, stopSpeaking, voiceAvailable, listenAvailable } from "./voice.js";
 import { openTalk } from "./talk.js";
@@ -352,22 +352,25 @@ el("div", { class: "card" },
       el("p", { class: "tiny" }, STEADY_NOTE),
     ),
         el("div", { class: "card flat" },
-      el("h3", {}, "Then, the details"),
+      el("h3", {}, "The meal plan"),
       (() => {
         const dk = ["mon","tue","wed","thu","fri","sat","sun"][(new Date().getDay() + 6) % 7];
-        const rid = store.get().week?.days[dk]?.recipeId;
-        const recipes = store.get().week ? null : null;
-        return el("p", { class: "muted" }, rid
-          ? "Tonight: a dinner is already chosen and waiting on Today. The week's plan and your numbers are there too, and none of it is urgent. Batteries first."
-          : "Tonight's dinner, the week's plan and your numbers are all waiting, and none of them are urgent. Batteries first.");
+        const slot = store.get().week?.days[dk];
+        const rec = slot?.recipeId ? recipeById(slot.recipeId) : null;
+        const bf = slot?.bf ? recipeById(slot.bf) : null;
+        const lu = slot?.lunch ? recipeById(slot.lunch) : null;
+        return el("div", {},
+          rec ? el("p", { class: "muted", style: "margin:0 0 0.2rem" }, el("strong", {}, "Tonight: "), rec.name + (slot.leftover ? " (leftovers night)" : "")) : el("p", { class: "muted", style: "margin:0 0 0.2rem" }, "No dinner chosen yet; the plan is one tap away."),
+          bf || lu ? el("p", { class: "tiny", style: "margin:0 0 0.5rem" }, [bf && "Breakfast: " + bf.name, lu && "Lunch: " + lu.name].filter(Boolean).join(" \u00B7 ")) : null,
+        );
       })(),
       el("div", { class: "btn-row" },
         el("button", { class: "btn secondary small", onclick: () => navigate("#/today") }, "Today"),
-        el("button", { class: "btn ghost small", onclick: () => navigate("#/plan") }, "The plan"),
+        el("button", { class: "btn ghost small", onclick: () => navigate("#/plan") }, "The week"),
         el("button", { class: "btn ghost small", onclick: () => navigate("#/signals") }, "My signals"),
       ),
     ),
-  );
+);
 }
 
 const STRENGTH_LABEL = { strong: ["evidence-strong", "strong evidence"], emerging: ["evidence-emerging", "emerging evidence"], thin: ["evidence-thin", "practice wisdom"] };
