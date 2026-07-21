@@ -431,6 +431,19 @@ export function renderPlan(main, navigate) {
       el("span", { class: "eyebrow" }, "Week of " + fmtDay(s.week.start)),
       el("h1", {}, "The meal plan"),
       el("p", {}, "Fresh, whole food, family sized, built around your rushed nights. Drag a dinner onto another day, or use the arrows; swap anything."),
+      (() => {
+        const bits = [];
+        bits.push(s.eatingStyle === "keto" ? ("Ketogenic" + (s.ketoStrict ? ", strict" : "")) : "Mediterranean");
+        bits.push(s.planAllMeals ? "all three meals" : "dinners only");
+        if ((s.profile.dietPrefs || []).length) bits.push(s.profile.dietPrefs.join(", "));
+        const goalNames = { weight: "losing weight kindly", muscle: "keeping muscle", treatment: "through treatment" };
+        if (goalNames[s.goal]) bits.push(goalNames[s.goal]);
+        const ex = (s.exclusions.always.length + s.exclusions.temp.length);
+        if (ex) bits.push(ex + " exclusion" + (ex > 1 ? "s" : ""));
+        return el("p", { class: "tiny", style: "margin-top:0.4rem" },
+          "The plan follows: " + bits.join(" \u00B7 ") + ". ",
+          el("button", { class: "link", onclick: () => navigate("#/settings") }, "Adjust"));
+      })(),
     ),
     ...(poolWarning ? [poolWarning] : []),
     needsCard,
