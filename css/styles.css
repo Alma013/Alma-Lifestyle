@@ -284,6 +284,9 @@ textarea { min-height: 4.6rem; resize: vertical; }
 .breath-ring.inhale .breath-stars { transform: scale(1.08); }
 .breath-ring.hold .breath-stars { transform: scale(1.08); }
 .breath-ring.exhale .breath-stars { transform: scale(0.68); }
+/* while the breath is held, the sky holds too: every star pauses mid-flight */
+.breath-ring.hold .breath-stars i,
+.breath-ring.hold .orbit { animation-play-state: paused; }
 .breath-ring.sky {
   position: relative; overflow: hidden;
   background:
