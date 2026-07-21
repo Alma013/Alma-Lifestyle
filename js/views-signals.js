@@ -5,6 +5,7 @@
 import { el, toast, openModal, closeModal, sparkline } from "./ui.js";
 import { store, uid, todayISO, fmtDay, startFast, endFast, adjustFastStart, fastElapsedHours, addReading, toMmol, displayGlucose, latestMetabolicPair, mealResponseSummary, localDayOf } from "./store.js";
 import { FAST_PROTOCOLS, FASTING_SAFETY } from "./data2.js";
+import { interpretGlucose, interpretKetone, interpretGKI, interpretLab, LAB_GUIDE } from "./interpret.js";
 import { openWhy } from "./views-track.js";
 
 // ---------- fasting ----------
@@ -155,7 +156,7 @@ export function renderSignals(main) {
     el("div", { class: "page-head" },
       el("span", { class: "eyebrow" }, "Your numbers, kindly"),
       el("h1", {}, "Signals"),
-      el("p", {}, "Glucose, ketones and lab results, read for patterns. Harta charts; your doctor interprets. ",
+      el("p", {}, "Glucose, ketones and lab results, read for patterns and explained in plain English against the published ranges. Decisions stay with your doctor; you arrive understanding. ",
         el("button", { class: "link", onclick: () => openWhy("cgm") }, "Sensors without anxiety")),
     ),
     el("div", { class: "card" },
@@ -179,6 +180,28 @@ export function renderSignals(main) {
           "Show " + (s.signals.unit === "mmol" ? "mg/dL" : "mmol/L")),
       ),
     ),
+    ...[(() => {
+      if (!latestG && !latestK) return null;
+      const cards = [];
+      if (latestG) {
+        const gi = interpretGlucose(latestG.v, latestG.ctx);
+        cards.push([`Glucose ${displayGlucose(latestG.v).v} ${displayGlucose(latestG.v).unit}` + (latestG.ctx ? ` (${latestG.ctx === "post" ? "after a meal" : latestG.ctx})` : ""), gi]);
+      }
+      if (latestK) cards.push([`Ketones ${latestK.v} mmol/L`, interpretKetone(latestK.v)]);
+      if (pair) cards.push([`GKI ${pair.gki}`, interpretGKI(pair.gki)]);
+      return el("div", { class: "card" },
+        el("h2", {}, "In plain English"),
+        ...cards.map(([title, it]) => el("div", { style: "margin-bottom:0.9rem" },
+          el("div", { class: "card-title-row" },
+            el("h3", {}, title),
+            el("span", { class: "tag " + (it.urgent ? "warm" : it.band.includes("Typical") || it.band.includes("Light") || it.band.includes("nutritional") ? "green" : "amber") }, it.band)),
+          it.urgent ? el("div", { class: "notice warm" }, el("strong", {}, "Take this seriously: "), it.plain) : el("p", { class: "muted", style: "font-size:0.9rem" }, it.plain),
+          el("ul", { style: "margin:0.3rem 0 0;padding-left:1.1rem;font-size:0.86rem;color:var(--ink-2)" }, it.actions.map((a) => el("li", {}, a))),
+          el("div", { class: "source-line" }, "Ranges: " + it.source + "."),
+        )),
+        el("p", { class: "tiny" }, "Ranges explained is not a person diagnosed: home readings drift, single numbers mislead, and the decisions that matter belong in a consult with the full picture. Harta's job is that you walk in already understanding."),
+      );
+    })()].filter(Boolean),
     el("div", { class: "card" },
       el("div", { class: "card-title-row" }, el("h2", {}, "Last 24 hours"),
         el("span", { class: "tiny" }, gDay.length + " glucose readings")),
@@ -199,7 +222,20 @@ export function renderSignals(main) {
               ...rows.slice(0, 4).map((l) => el("div", { class: "reading-row" },
                 el("span", { class: "r-val" }, l.value + " " + (l.unit || "")),
                 el("span", { class: "r-meta" }, fmtDay(l.date)),
-                el("button", { class: "link", onclick: () => { store.mutate((st) => { st.signals.labs = st.signals.labs.filter((x) => x.id !== l.id); }); renderSignals(main); } }, "remove"),
+                el("span", {},
+                  LAB_GUIDE[name] ? el("button", { class: "link", onclick: () => {
+                    const it = interpretLab(name, l.value);
+                    openModal(
+                      el("h2", {}, name + ": " + l.value + " " + (l.unit || LAB_GUIDE[name].unit)),
+                      el("span", { class: "tag " + (it.band.includes("Typical") || it.band.includes("Sufficient") || it.band.includes("target") || it.band.includes("better") || it.band.includes("Low") && name === "CRP" ? "green" : "amber") }, it.band),
+                      el("p", { style: "margin-top:0.8rem" }, it.plain),
+                      el("ul", { style: "padding-left:1.1rem" }, it.actions.map((a) => el("li", { style: "margin-bottom:0.3rem" }, a))),
+                      el("div", { class: "source-line" }, "Ranges: " + it.source + "."),
+                    );
+                  } }, "explain") : null,
+                  " ",
+                  el("button", { class: "link", onclick: () => { store.mutate((st) => { st.signals.labs = st.signals.labs.filter((x) => x.id !== l.id); }); renderSignals(main); } }, "remove"),
+                ),
               )),
             )))
         : el("p", { class: "muted" }, "No labs recorded yet."),
