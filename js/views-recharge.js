@@ -3,7 +3,7 @@
 
 import { el, icon, toast, openModal, closeModal } from "./ui.js";
 import { store, todayISO, uid, greeting, localDayOf, claimMilestone, recipeById } from "./store.js";
-import { passageForToday, eveningPassageForToday, PROMPTS, SOUNDSCAPES, SOUND_GROUPS, STEADY_TECHNIQUES, STEADY_NOTE, ACHIEVER_TECHNIQUES, ACHIEVER_NOTE } from "./data2.js";
+import { passageForToday, eveningPassageForToday, PROMPTS, SOUNDSCAPES, SOUND_GROUPS, STEADY_TECHNIQUES, STEADY_NOTE, ACHIEVER_TECHNIQUES, ACHIEVER_NOTE, HEALING_WRITE_STEPS, HEALING_WRITE_NOTE, HEALING_WRITE_SOURCE, FUTURE_SELF_STEPS, FUTURE_SELF_NOTE, FUTURE_SELF_SOURCE } from "./data2.js";
 import { speak, stopSpeaking, voiceAvailable, listenAvailable } from "./voice.js";
 import { openTalk } from "./talk.js";
 import { addJournalEntry } from "./idb.js";
@@ -52,6 +52,24 @@ const BREATH_PATTERNS = {
     how: "In through the nose for four, hold for seven, then out through the open mouth with a soft whoosh for eight, lips as if cooling soup.",
     note: "A stronger pattern for winding down toward sleep. If holding feels strained, the gentle pattern is the better choice tonight." },
 };
+
+let playlistTimer = null;
+let playlistRun = null; // { name, items, i }
+function stopPlaylist() { clearTimeout(playlistTimer); playlistTimer = null; playlistRun = null; }
+function runPlaylist(pl, onAdvance) {
+  stopPlaylist();
+  playlistRun = { ...pl, i: 0 };
+  const step = () => {
+    if (!playlistRun) return;
+    const id = playlistRun.items[playlistRun.i % playlistRun.items.length];
+    const scape = SOUNDSCAPES.find((x) => x.id === id);
+    if (scape) playScape(scape);
+    onAdvance?.(id);
+    playlistRun.i++;
+    playlistTimer = setTimeout(step, (pl.minutes || 5) * 60000);
+  };
+  step();
+}
 
 let breathTimer = null;
 let breathStartedAt = null;
@@ -281,6 +299,37 @@ el("div", { class: "card" },
         el("h3", { style: "font-family:var(--font-ui);font-size:0.74rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink-3);margin-bottom:0.4rem" }, glabel),
         el("div", { class: "sound-grid" }, tiles.filter((t, i) => SOUNDSCAPES[i].group === gid)),
       )),
+      el("div", { class: "divider" }),
+      el("h3", {}, "Your playlists"),
+      el("p", { class: "tiny" }, "String sounds into a journey: each plays for a few minutes, then hands over to the next, around and around."),
+      el("div", { class: "chip-row" },
+        ...store.get().playlists.map((pl) => el("button", { class: "chip" + (playlistRun && playlistRun.id === pl.id ? " on" : ""), onclick: () => {
+          if (playlistRun && playlistRun.id === pl.id) { stopPlaylist(); stopScape(); renderRecharge(main, navigate); }
+          else { runPlaylist(pl); toast("Playing " + pl.name); renderRecharge(main, navigate); }
+        } }, (playlistRun && playlistRun.id === pl.id ? "\u25A0 " : "\u25B6 ") + pl.name)),
+        el("button", { class: "chip", onclick: () => {
+          const nameInput = el("input", { type: "text", placeholder: "Evening wind-down" });
+          const chosen = [];
+          const pickRow = el("div", { class: "chip-row" },
+            ...SOUNDSCAPES.map((sc) => el("button", { class: "chip", onclick: (e) => {
+              const i = chosen.indexOf(sc.id);
+              if (i >= 0) { chosen.splice(i, 1); e.target.classList.remove("on"); e.target.textContent = sc.name; }
+              else { chosen.push(sc.id); e.target.classList.add("on"); e.target.textContent = chosen.length + ". " + sc.name; }
+            } }, sc.name)));
+          const mins = el("input", { type: "number", value: "5", min: "1", max: "30", style: "max-width:6rem" });
+          openModal(
+            el("h2", {}, "A new playlist"),
+            el("div", { class: "field" }, el("label", {}, "Name"), nameInput),
+            el("div", { class: "field" }, el("label", {}, "Tap the sounds in the order you want them"), pickRow),
+            el("div", { class: "field" }, el("label", {}, "Minutes each"), mins),
+            el("button", { class: "btn", onclick: () => {
+              if (!chosen.length) { toast("Pick at least one sound"); return; }
+              store.mutate((st) => st.playlists.push({ id: uid(), name: nameInput.value.trim() || "My journey", items: [...chosen], minutes: Math.max(1, Number(mins.value) || 5) }));
+              closeModal(); renderRecharge(main, navigate); toast("Playlist saved");
+            } }, "Save the playlist"),
+          );
+        } }, "+ New playlist"),
+      ),
       el("p", { class: "tiny", style: "margin-top:0.7rem" }, el("button", { class: "link", onclick: () => openWhy("sound-calm") }, "Why this works, honestly")),
     ),
     el("div", { class: "card" },
@@ -343,6 +392,11 @@ el("div", { class: "card" },
         );
       })(),
       el("p", { class: "tiny" }, "Prompts follow one idea: the hardest moments are also the clearest. What they showed you is yours to keep."),
+      el("div", { class: "divider" }),
+      el("div", { class: "btn-row" },
+        el("button", { class: "btn secondary small", onclick: openHealingWrite }, "Writing that heals: guided"),
+        el("button", { class: "btn secondary small", onclick: openFutureSelf }, "The future self: guided"),
+      ),
     ),
     el("div", { class: "card" },
       el("h2", {}, "Master the hard moments"),
@@ -366,7 +420,7 @@ el("div", { class: "card" },
       })(),
       el("div", { class: "btn-row" },
         el("button", { class: "btn secondary small", onclick: () => navigate("#/today") }, "Today"),
-        el("button", { class: "btn ghost small", onclick: () => navigate("#/plan") }, "The week"),
+        el("button", { class: "btn ghost small", onclick: () => navigate("#/plan") }, "The meal plan"),
         el("button", { class: "btn ghost small", onclick: () => navigate("#/signals") }, "My signals"),
       ),
     ),
@@ -384,8 +438,83 @@ function openSteady(t) {
     el("ol", { class: "method", style: "margin-top:0.6rem" }, t.steps.map((st) => el("li", {}, st))),
     el("p", { class: "muted", style: "margin-top:0.6rem" }, t.why),
     el("div", { class: "source-line" }, "Source: " + t.source + "."),
-    voiceAvailable() && store.get().voiceOn ? el("button", { class: "btn secondary small", style: "margin-top:0.7rem", onclick: () => speak(readable) }, "Read it to me") : null,
+    voiceAvailable() ? el("button", { class: "btn secondary small", style: "margin-top:0.7rem", onclick: () => speak(readable) }, "\uD83D\uDD0A Hear it instead") : null,
   );
 }
 
-export function leaveRecharge() { stopBreath(); creditOnLeave?.(); creditOnLeave = null; stopSpeaking(); }
+// writing that heals: four guided steps, kept whole in the journal
+function openHealingWrite() {
+  let step = 0;
+  const answers = [];
+  const paint = () => {
+    const st = HEALING_WRITE_STEPS[step];
+    const ta = el("textarea", { style: "min-height:9rem", placeholder: "Write freely; spelling and order do not matter here." });
+    if (answers[step]) ta.value = answers[step];
+    openModal(
+      { onClose: () => {} },
+      el("span", { class: "eyebrow" }, `Writing that heals \u00B7 ${step + 1} of ${HEALING_WRITE_STEPS.length}`),
+      el("h2", {}, st.title),
+      el("p", { class: "muted" }, st.prompt,
+        voiceAvailable() ? el("button", { class: "link", style: "margin-left:0.4rem", onclick: () => speak(st.prompt) }, "hear it") : null),
+      el("div", { class: "field" }, ta),
+      el("div", { class: "btn-row" },
+        step > 0 ? el("button", { class: "btn ghost", onclick: () => { answers[step] = ta.value; step--; paint(); } }, "Back") : null,
+        step < HEALING_WRITE_STEPS.length - 1
+          ? el("button", { class: "btn", onclick: () => { answers[step] = ta.value; step++; paint(); } }, "Next")
+          : el("button", { class: "btn", onclick: async () => {
+              answers[step] = ta.value;
+              const keep = (answers[3] || "").trim();
+              const body = HEALING_WRITE_STEPS.map((x, i) => x.title + ":" + String.fromCharCode(10) + (answers[i] || "").trim()).join(String.fromCharCode(10) + String.fromCharCode(10));
+              const text = (keep ? keep + String.fromCharCode(10) + String.fromCharCode(10) : "") + body;
+              await addJournalEntry({ type: "text", text, tags: ["healing-write"] });
+              store.mutate((s2) => { s2.journalIndex.unshift({ id: uid(), t: new Date().toISOString(), type: "text", preview: (keep || answers[0] || "A healing write").slice(0, 90), tags: ["healing-write"] }); });
+              closeModal(); toast("Kept, whole, in your journal. Gently done.");
+            } }, "Keep it all"),
+      ),
+      el("p", { class: "tiny", style: "margin-top:0.6rem" }, HEALING_WRITE_NOTE),
+      el("div", { class: "source-line" }, "Source: " + HEALING_WRITE_SOURCE + "."),
+    );
+  };
+  paint();
+}
+
+// the future self: a timed, spoken rehearsal
+function openFutureSelf() {
+  let idx = -1, timer = null;
+  const stage = el("h2", {}, "The future self");
+  const text = el("p", { class: "muted", style: "min-height:4.5rem;font-size:1rem" }, "Five stages, about six minutes. Sit somewhere the world can spare you. The voice guides each stage if the device can speak; the words stay on screen either way.");
+  const countdown = el("p", { class: "tiny" }, "");
+  const startBtn = el("button", { class: "btn", onclick: () => next() }, "Begin");
+  const next = () => {
+    clearTimeout(timer);
+    idx++;
+    if (idx >= FUTURE_SELF_STEPS.length) {
+      stage.textContent = "Returned";
+      text.textContent = "Carry it lightly. The future self is not far away; you were just there.";
+      countdown.textContent = "";
+      startBtn.textContent = "Again";
+      idx = -1;
+      store.mutate((s2) => { s2.sanctuaryMinutes += 6; });
+      return;
+    }
+    const st = FUTURE_SELF_STEPS[idx];
+    stage.textContent = st.title;
+    text.textContent = st.text;
+    startBtn.textContent = "Skip ahead";
+    if (voiceAvailable()) speak(st.text);
+    let left = st.seconds;
+    countdown.textContent = st.seconds + "s";
+    const tick = () => { left -= 5; if (left > 0) { countdown.textContent = left + "s"; timer = setTimeout(tick, 5000); } else next(); };
+    timer = setTimeout(tick, 5000);
+  };
+  openModal(
+    { onClose: () => { clearTimeout(timer); stopSpeaking(); } },
+    el("span", { class: "eyebrow" }, "A guided rehearsal"),
+    stage, text, countdown,
+    el("div", { class: "btn-row" }, startBtn),
+    el("p", { class: "tiny", style: "margin-top:0.6rem" }, FUTURE_SELF_NOTE),
+    el("div", { class: "source-line" }, "Source: " + FUTURE_SELF_SOURCE + "."),
+  );
+}
+
+export function leaveRecharge() { stopBreath(); creditOnLeave?.(); creditOnLeave = null; stopSpeaking(); stopPlaylist(); }

@@ -22,6 +22,7 @@ const DEFAULT_STATE = {
   },
   eatingStyle: "med",   // "med" (whole-food Mediterranean) | "keto" (adult plates only)
   planAllMeals: false,  // when true the week also carries breakfasts and lunches
+  playlists: [],        // { id, name, items: [scapeId], minutes } user-composed sound journeys
   ketoStrict: false,    // true: dinners under ~7 g net carbs and no added sugar (max ~20 g across the day)
   goal: "health",       // "health" | "weight" | "muscle" | "treatment"
   liFoods: [],          // defence-system foods the household loves (from Dr Li's table)

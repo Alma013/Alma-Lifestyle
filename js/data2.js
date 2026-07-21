@@ -73,6 +73,26 @@ export const PROMPTS = [
   "Write the sentence you needed to hear on your worst day. You are allowed to be the one who says it.",
 ];
 
+// ---------- guided practices: writing that heals, and the future self ----------
+export const HEALING_WRITE_STEPS = [
+  { title: "Arrive", prompt: "Three slow breaths first. Then: what is asking to be written about today? Name it in one sentence, without explaining it yet.", minutes: 1 },
+  { title: "Tell it whole", prompt: "Write what happened and what it touched in you. Facts and feelings together, in any order, without editing. Nobody reads this but you.", minutes: 4 },
+  { title: "Look again", prompt: "Read what you wrote as a kind stranger would. What does this person need? What do they already understand that they could not see while it was happening?", minutes: 3 },
+  { title: "Keep one thing", prompt: "Finish with one sentence you want to keep: something true, kind and yours. It goes at the top when this is saved.", minutes: 1 },
+];
+export const HEALING_WRITE_NOTE = "Built on expressive-writing research: across many trials, writing about hard experiences in this structured way measurably helps mood and even immune markers. It can stir things up before it settles them; if a wound is fresh or the dark is heavy, do this alongside professional support, not instead of it.";
+export const HEALING_WRITE_SOURCE = "Pennebaker, expressive writing paradigm; meta-analyses in Psychological Science and BJHP";
+
+export const FUTURE_SELF_STEPS = [
+  { title: "Settle", text: "Sit or lie comfortably. Close the eyes. Breathe in for four, out for six, and let each exhale drop the shoulders a little further.", seconds: 60 },
+  { title: "Widen", text: "Let attention soften from thoughts to space: the room around you, the space your body takes, the space between your breaths. Rest in that width.", seconds: 90 },
+  { title: "Elevate", text: "Call up one genuine feeling of gratitude or love: a person, a moment, a mercy. Let the feeling grow past the memory that carried it, until it fills the chest.", seconds: 90 },
+  { title: "Become", text: "Now see the future you: healed where healing is coming, steady, alive. Watch them move through an ordinary morning. Feel what they feel, as if it is already true.", seconds: 120 },
+  { title: "Return", text: "Bring one quality of that future self back with you: their calm, their certainty, their kindness. Breathe normally. Open the eyes when ready.", seconds: 45 },
+];
+export const FUTURE_SELF_NOTE = "A guided rehearsal in the style popularised by Dr Joe Dispenza: breath, open awareness, elevated emotion, and vivid rehearsal of the self you are becoming. The honest label: the meditation components (slow breath, gratitude practice, mental rehearsal) each carry real evidence; the grander healing claims made around this style remain unproven. The calm and the clarity are yours either way.";
+export const FUTURE_SELF_SOURCE = "Dispenza, Breaking the Habit of Being Yourself (2012), practice structure; component evidence: slow breathing, gratitude and imagery literatures";
+
 // ---------- soundscapes (synthesised on device, honest about the evidence) ----------
 export const SOUNDSCAPES = [
   { id: "handpan", name: "Handpan", sub: "warm steel, slow hands", engine: "handpan", group: "musical" },

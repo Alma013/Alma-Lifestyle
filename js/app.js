@@ -14,7 +14,7 @@ import { renderCounsel, renderSpeak } from "./views-speak.js";
 const ROUTES = [
   { hash: "#/", label: "Recharge", icon: "sun", render: renderRecharge },
   { hash: "#/today", label: "Today", icon: "home", render: renderToday },
-  { hash: "#/plan", label: "Plan", icon: "plan", render: renderPlan },
+  { hash: "#/plan", label: "Meals", icon: "plan", render: renderPlan },
   { hash: "#/track", label: "Track", icon: "track", render: renderTrack },
   { hash: "#/more", label: "More", icon: "more", render: renderMore },
 ];

@@ -2,7 +2,7 @@
 
 import { el, icon, openModal, closeModal, toast } from "./ui.js";
 import { RECIPES, SECTIONS, HABITS, NUDGES } from "./data.js";
-import { passageForToday } from "./data2.js";
+import { passageForToday, PROMPTS } from "./data2.js";
 import {
   bodyNeeds, eatingWindow, timesCooked, allRecipes, claimMilestone, fmtClock, sumQuantities, localDayOf, greeting, displayGlucose, eligibleRecipes,
   store, DAY_KEYS, DAY_NAMES, todayISO, dayKeyToday, dateOfDayKey, fmtDay,
@@ -122,26 +122,56 @@ function openDaySheet() {
   const dk = dayKeyToday();
   const slot = s.week?.days[dk] || {};
   const passage = (function () { try { return passageForToday(todayISO()); } catch { return null; } })();
-  const meal = (id, label) => {
-    const r = id ? recipeById(id) : null;
-    if (!r) return null;
-    return el("div", { style: "margin-bottom:0.7rem" },
-      el("strong", {}, label + ": " + r.name),
-      el("p", { class: "tiny", style: "margin:0.1rem 0" }, r.ingredients.map((i) => i.n + (i.q ? " (" + i.q + ")" : "")).join(", ")),
-      el("ol", { style: "margin:0.2rem 0 0;padding-left:1.2rem;font-size:0.85rem" }, r.method.map((m) => el("li", {}, m))),
-    );
-  };
   const w = eatingWindow();
+  const rec = (id) => (id ? recipeById(id) : null);
+  const bf = rec(slot.bf), lu = rec(slot.lunch), dn = rec(slot.recipeId);
+  const nudge = s.activeNudge ? (NUDGES.find((n) => n.id === s.activeNudge) || {}).text : null;
+  const prompt = (function () { try { const seed = todayISO().split("-").reduce((x, y) => x + Number(y), 0); return PROMPTS[seed % PROMPTS.length]; } catch { return null; } })();
+
+  const block = (when, items) => el("div", { style: "margin-bottom:0.8rem" },
+    el("h3", { style: "font-size:0.78rem;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-3);margin-bottom:0.25rem" }, when),
+    el("ul", { style: "margin:0;padding-left:1.1rem;font-size:0.9rem" }, items.filter(Boolean).map((x) => el("li", { style: "margin-bottom:0.2rem" }, x))));
+
+  const mealLine = (label, r) => r ? `\u25A1 ${label}: ${r.name}` + (r.time <= 10 ? ` (${r.time} min)` : "") : null;
+
   openModal(
-    el("h2", {}, "Today, on one page"),
+    el("h2", {}, "Today, planned for you"),
+    el("p", { class: "tiny" }, "The day in order, wake to sleep. Print it, put it on the fridge, and simply follow; nothing on this page needs the phone."),
     el("div", { id: "day-sheet" },
-      passage ? el("p", { style: "font-style:italic" }, "\u201C" + passage.text + "\u201D \u00B7 " + passage.ref) : null,
-      meal(slot.bf, "Breakfast"),
-      meal(slot.lunch, "Lunch"),
-      meal(slot.recipeId, "Dinner"),
-      w && w.mode !== "fasting" ? el("p", { class: "tiny" }, w.mode === "open" ? "Kitchen closes " + fmtClock(w.closes) + "." : "Kitchen reopens " + fmtClock(w.opens) + ".") : null,
-      el("p", { class: "tiny" }, "The gentle four: moved \u25A1 \u00B7 slept well \u25A1 \u00B7 ate well \u25A1 \u00B7 water first \u25A1"),
-      el("p", { class: "tiny" }, "Printed from Harta. The phone can stay in the drawer today."),
+      passage ? el("p", { style: "font-style:italic;margin-bottom:0.8rem" }, "\u201C" + passage.text + "\u201D \u00B7 " + passage.ref) : null,
+      block("On waking", [
+        "\u25A1 A full glass of water, before anything else",
+        "\u25A1 Two minutes of daylight: open the curtains wide, step outside if you can",
+        "\u25A1 Five slow breaths: in through the nose for four, out for six",
+      ]),
+      block("Morning", [
+        mealLine("Breakfast", bf) || "\u25A1 Breakfast: savoury first serves the whole day",
+        "\u25A1 Any medications or supplements your doctor has you on",
+        "\u25A1 Move once before noon: a walk, the stairs, twenty slow squats",
+      ]),
+      block("Midday", [
+        mealLine("Lunch", lu) || "\u25A1 Lunch: vegetables first, then the rest",
+        "\u25A1 Ten minutes outside or walking after eating",
+        "\u25A1 Water check: the bottle should be half gone by now",
+      ]),
+      block("Afternoon", [
+        "\u25A1 One quiet pause: three slow breaths at the kitchen bench counts",
+        nudge ? "\u25A1 This week's one kind nudge: " + nudge : null,
+      ]),
+      block("Evening", [
+        mealLine("Dinner", dn) || "\u25A1 Dinner: the meal plan is one tap away tomorrow",
+        w && w.mode === "open" ? "\u25A1 Kitchen closes at " + fmtClock(w.closes) : null,
+        w && w.mode === "closed" ? "\u25A1 Kitchen reopens at " + fmtClock(w.opens) : null,
+        "\u25A1 The after-dinner walk: ten minutes, whoever wants to comes along",
+        "\u25A1 Screens drift down an hour before bed",
+      ]),
+      block("Before sleep", [
+        prompt ? "\u25A1 One honest line in the journal: " + prompt : "\u25A1 One honest line in the journal",
+        "\u25A1 One good thing from today, said out loud or written",
+        "\u25A1 4-7-8 breathing in bed: in for four, hold seven, out through the mouth for eight",
+      ]),
+      el("p", { class: "tiny", style: "margin-top:0.8rem" }, "The gentle four, when they happened: moved \u25A1 \u00B7 slept well \u25A1 \u00B7 ate well \u25A1 \u00B7 water first \u25A1"),
+      el("p", { class: "tiny" }, "Printed from Harta. Follow gently; half of this done kindly beats all of it done grimly."),
     ),
     el("button", { class: "btn", style: "margin-top:0.8rem", onclick: () => window.print() }, "Print"),
   );
@@ -397,7 +427,7 @@ export function renderPlan(main, navigate) {
   main.replaceChildren(
     el("div", { class: "page-head" },
       el("span", { class: "eyebrow" }, "Week of " + fmtDay(s.week.start)),
-      el("h1", {}, "The plan"),
+      el("h1", {}, "The meal plan"),
       el("p", {}, "Whole food, family sized, built around your rushed nights. Drag a dinner onto another day, or use the arrows; swap anything."),
     ),
     ...(poolWarning ? [poolWarning] : []),
