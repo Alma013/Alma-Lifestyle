@@ -419,7 +419,11 @@ el("div", { class: "card" },
         const lu = slot?.lunch ? recipeById(slot.lunch) : null;
         return el("div", {},
           rec ? el("p", { class: "muted", style: "margin:0 0 0.2rem" }, el("strong", {}, "Tonight: "), rec.name + (slot.leftover ? " (leftovers night)" : "")) : el("p", { class: "muted", style: "margin:0 0 0.2rem" }, "No dinner chosen yet; the plan is one tap away."),
-          bf || lu ? el("p", { class: "tiny", style: "margin:0 0 0.5rem" }, [bf && "Breakfast: " + bf.name, lu && "Lunch: " + lu.name].filter(Boolean).join(" \u00B7 ")) : null,
+          (() => {
+            const hour = new Date().getHours();
+            const parts = [hour < 11 && bf && "Breakfast: " + bf.name, hour < 16 && lu && "Lunch: " + lu.name].filter(Boolean);
+            return parts.length ? el("p", { class: "tiny", style: "margin:0 0 0.5rem" }, parts.join(" \u00B7 ")) : null;
+          })(),
         );
       })(),
       el("div", { class: "btn-row" },

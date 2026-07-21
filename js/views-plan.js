@@ -241,11 +241,13 @@ export function renderToday(main, navigate) {
     ...[(() => {
       if (!s.planAllMeals) return null;
       const slot2 = s.week?.days[dk];
-      if (!slot2?.bf && !slot2?.lunch) return null;
-      const bf = slot2.bf ? recipeById(slot2.bf) : null;
-      const lu = slot2.lunch ? recipeById(slot2.lunch) : null;
+      const hour = new Date().getHours();
+      // meals whose moment has passed do not haunt the evening
+      const bf = hour < 11 && slot2?.bf ? recipeById(slot2.bf) : null;
+      const lu = hour < 16 && slot2?.lunch ? recipeById(slot2.lunch) : null;
+      if (!bf && !lu) return null;
       return el("div", { class: "card flat" },
-        el("h3", {}, "The rest of today"),
+        el("h3", {}, "Still to come today"),
         bf ? el("p", { class: "muted", style: "margin:0.15rem 0" }, el("strong", {}, "Breakfast: "), el("button", { class: "link", onclick: () => openRecipe(bf) }, bf.name)) : null,
         lu ? el("p", { class: "muted", style: "margin:0.15rem 0" }, el("strong", {}, "Lunch: "), el("button", { class: "link", onclick: () => openRecipe(lu) }, lu.name)) : null,
       );
