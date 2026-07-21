@@ -506,15 +506,29 @@ function saveCustomRecipe(parsed, main) {
   closeModal(); renderRecipes(main);
   toast("\u201C" + parsed.name + "\u201D is in the kitchen now");
 }
-function addFromLinkModal(main) {
+function addFromLinkModal(main, mode = "link") {
   const urlInput = el("input", { type: "url", placeholder: "https://\u2026 paste the recipe page" });
   const status = el("p", { class: "tiny" }, "");
-  const pasteArea = el("textarea", { placeholder: "\u2026or paste the recipe text itself here: title first, then ingredients, then method.", style: "min-height:8rem" });
+  const pasteArea = el("textarea", { placeholder: "Title on the first line, then the ingredients, then the method. Straight from any book, note, email or grandmother.", style: "min-height:" + (mode === "paste" ? "12rem" : "8rem") });
+  const linkField = el("div", { class: "field" }, urlInput);
+  const linkBtnRow = el("div", { class: "btn-row" });
   openModal(
-    el("h2", {}, "Add a recipe from a link"),
-    el("p", { class: "muted" }, "Paste a link and Harta will read the recipe straight off the page where the site allows it. Where it does not, paste the text and Harta will shape it."),
-    el("div", { class: "field" }, urlInput),
-    el("div", { class: "btn-row" },
+    el("h2", {}, mode === "paste" ? "Paste a recipe" : "Add a recipe from a link"),
+    el("p", { class: "muted" }, mode === "paste"
+      ? "Copy a recipe from anywhere, paste it here, and Harta shapes it into a proper card: it will plan, shop and swap like every other recipe."
+      : "Paste a link and Harta will read the recipe straight off the page where the site allows it. Where it does not, paste the text and Harta will shape it."),
+    mode === "paste" ? null : linkField,
+    mode === "paste" ? null : linkBtnRow,
+    el("div", { class: "field" }, pasteArea),
+    el("button", { class: "btn" + (mode === "paste" ? "" : " secondary"), onclick: () => {
+      const parsed = recipeFromPaste(pasteArea.value, urlInput.value.trim() || null);
+      if (parsed) saveCustomRecipe(parsed, main);
+      else toast("Harta needs a title, some ingredients and a method to work with");
+    } }, "Shape it into a recipe"),
+    mode === "paste" ? null : status,
+  );
+  if (mode === "paste") { pasteArea.focus(); return; }
+  linkBtnRow.append(
       el("button", { class: "btn", onclick: async () => {
         const url = urlInput.value.trim();
         if (!/^https?:\/\//.test(url)) { toast("A full link, starting with https"); return; }
@@ -530,14 +544,6 @@ function addFromLinkModal(main) {
           status.textContent = "That site does not let apps read it directly (a common privacy setting). Copy the recipe text from the page and paste it below; Harta will do the rest.";
         }
       } }, "Read the link"),
-    ),
-    status,
-    el("div", { class: "field" }, pasteArea),
-    el("button", { class: "btn secondary", onclick: () => {
-      const parsed = recipeFromPaste(pasteArea.value, urlInput.value.trim() || null);
-      if (parsed) saveCustomRecipe(parsed, main);
-      else toast("Harta needs a title, some ingredients and a method to work with");
-    } }, "Shape the paste into a recipe"),
   );
 }
 
@@ -555,7 +561,8 @@ export function renderRecipes(main) {
         el("p", {}, "Every recipe carries its why. Mark what the family loved and the planner learns."),
       ),
       el("div", { class: "btn-row", style: "margin-bottom:0.8rem" },
-        el("button", { class: "btn secondary small", onclick: () => addFromLinkModal(main) }, "Add from a link"),
+        el("button", { class: "btn secondary small", onclick: () => addFromLinkModal(main, "paste") }, "Paste a recipe"),
+        el("button", { class: "btn ghost small", onclick: () => addFromLinkModal(main, "link") }, "Add from a link"),
       ),
       el("div", { class: "chip-row" },
         TAGS.map(([t, label]) =>
