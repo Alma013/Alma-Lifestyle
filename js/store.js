@@ -44,7 +44,8 @@ const DEFAULT_STATE = {
   customRecipes: [],    // recipes the user added from a link or by paste
   journalIndex: [],     // metadata only; photo/audio blobs live in IndexedDB
   arrivalLast: null,    // ISO date the arrival passage last showed
-  voiceOn: false,       // read-aloud with the device's own voice, user's choice
+  voiceOn: false,
+  introSeen: false,      // the what-this-app-can-do card on the first page       // read-aloud with the device's own voice, user's choice
   sanctuaryMinutes: 0,  // lifetime minutes of breathing/sound, for gentle recognition
   milestonesSeen: [],   // one-time quiet recognitions already given; they only ever count up
   mealMemoryDates: {},  // { recipeId: ISO date it was first loved }

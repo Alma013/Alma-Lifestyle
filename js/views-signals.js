@@ -5,7 +5,7 @@
 import { el, toast, openModal, closeModal, sparkline } from "./ui.js";
 import { store, uid, todayISO, fmtDay, startFast, endFast, adjustFastStart, fastElapsedHours, addReading, toMmol, displayGlucose, latestMetabolicPair, mealResponseSummary, localDayOf } from "./store.js";
 import { FAST_PROTOCOLS, FASTING_SAFETY } from "./data2.js";
-import { interpretGlucose, interpretKetone, interpretGKI, interpretLab, LAB_GUIDE } from "./interpret.js";
+import { interpretGlucose, interpretKetone, interpretGKI, interpretLab, LAB_GUIDE, personalGlucose } from "./interpret.js";
 import { openWhy } from "./views-track.js";
 
 // ---------- fasting ----------
@@ -185,18 +185,29 @@ export function renderSignals(main) {
       const cards = [];
       if (latestG) {
         const gi = interpretGlucose(latestG.v, latestG.ctx);
-        cards.push([`Glucose ${displayGlucose(latestG.v).v} ${displayGlucose(latestG.v).unit}` + (latestG.ctx ? ` (${latestG.ctx === "post" ? "after a meal" : latestG.ctx})` : ""), gi]);
+        const pg = personalGlucose(latestG.v, latestG.ctx || "fasting", readings);
+        cards.push([`Glucose ${displayGlucose(latestG.v).v} ${displayGlucose(latestG.v).unit}` + (latestG.ctx ? ` (${latestG.ctx === "post" ? "after a meal" : latestG.ctx})` : ""), gi, pg]);
       }
-      if (latestK) cards.push([`Ketones ${latestK.v} mmol/L`, interpretKetone(latestK.v)]);
-      if (pair) cards.push([`GKI ${pair.gki}`, interpretGKI(pair.gki)]);
+      if (latestK) cards.push([`Ketones ${latestK.v} mmol/L`, interpretKetone(latestK.v), null]);
+      if (pair) cards.push([`GKI ${pair.gki}`, interpretGKI(pair.gki), null]);
       return el("div", { class: "card" },
-        el("h2", {}, "In plain English"),
-        ...cards.map(([title, it]) => el("div", { style: "margin-bottom:0.9rem" },
+        el("h2", {}, "What your numbers are saying"),
+        ...cards.map(([title, it, personal]) => el("div", { style: "margin-bottom:1.1rem" },
           el("div", { class: "card-title-row" },
             el("h3", {}, title),
             el("span", { class: "tag " + (it.urgent ? "warm" : it.band.includes("Typical") || it.band.includes("Light") || it.band.includes("nutritional") ? "green" : "amber") }, it.band)),
+          personal?.headline ? el("p", { style: "font-weight:600;margin:0.2rem 0" }, personal.headline) : null,
+          personal?.trend ? el("p", { class: "muted", style: "font-size:0.88rem" }, personal.trend) : null,
           it.urgent ? el("div", { class: "notice warm" }, el("strong", {}, "Take this seriously: "), it.plain) : el("p", { class: "muted", style: "font-size:0.9rem" }, it.plain),
-          el("ul", { style: "margin:0.3rem 0 0;padding-left:1.1rem;font-size:0.86rem;color:var(--ink-2)" }, it.actions.map((a) => el("li", {}, a))),
+          it.why ? el("div", { style: "margin:0.4rem 0" },
+            el("strong", { style: "font-size:0.84rem" }, "Why it can look like this"),
+            el("ul", { style: "margin:0.15rem 0 0;padding-left:1.1rem;font-size:0.86rem;color:var(--ink-2)" }, it.why.map((a) => el("li", {}, a)))) : null,
+          el("div", { style: "margin:0.4rem 0" },
+            el("strong", { style: "font-size:0.84rem" }, "Next"),
+            el("ul", { style: "margin:0.15rem 0 0;padding-left:1.1rem;font-size:0.86rem;color:var(--ink-2)" }, it.actions.map((a) => el("li", {}, a)))),
+          it.avoid ? el("div", { style: "margin:0.4rem 0" },
+            el("strong", { style: "font-size:0.84rem" }, "Avoid"),
+            el("ul", { style: "margin:0.15rem 0 0;padding-left:1.1rem;font-size:0.86rem;color:var(--ink-2)" }, it.avoid.map((a) => el("li", {}, a)))) : null,
           el("div", { class: "source-line" }, "Ranges: " + it.source + "."),
         )),
         el("p", { class: "tiny" }, "Ranges explained is not a person diagnosed: home readings drift, single numbers mislead, and the decisions that matter belong in a consult with the full picture. Harta's job is that you walk in already understanding."),
@@ -225,8 +236,13 @@ export function renderSignals(main) {
                 el("span", {},
                   LAB_GUIDE[name] ? el("button", { class: "link", onclick: () => {
                     const it = interpretLab(name, l.value);
+                    const series = rows.slice().reverse();
+                    const trendLine = series.length >= 2
+                      ? "Your own trail: " + series.map((x) => x.value).join(" \u2192 ") + (series[series.length - 1].value < series[0].value ? ". Moving down." : series[series.length - 1].value > series[0].value ? ". Moving up." : ". Holding steady.")
+                      : null;
                     openModal(
                       el("h2", {}, name + ": " + l.value + " " + (l.unit || LAB_GUIDE[name].unit)),
+                      trendLine ? el("p", { style: "font-weight:600" }, trendLine) : null,
                       el("span", { class: "tag " + (it.band.includes("Typical") || it.band.includes("Sufficient") || it.band.includes("target") || it.band.includes("better") || it.band.includes("Low") && name === "CRP" ? "green" : "amber") }, it.band),
                       el("p", { style: "margin-top:0.8rem" }, it.plain),
                       el("ul", { style: "padding-left:1.1rem" }, it.actions.map((a) => el("li", { style: "margin-bottom:0.3rem" }, a))),
