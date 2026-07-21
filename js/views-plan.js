@@ -3,7 +3,7 @@
 import { el, icon, openModal, closeModal, toast } from "./ui.js";
 import { RECIPES, SECTIONS, HABITS, NUDGES } from "./data.js";
 import {
-  bodyNeeds, eatingWindow, fmtClock, sumQuantities, localDayOf, greeting, displayGlucose, eligibleRecipes,
+  bodyNeeds, eatingWindow, timesCooked, claimMilestone, fmtClock, sumQuantities, localDayOf, greeting, displayGlucose, eligibleRecipes,
   store, DAY_KEYS, DAY_NAMES, todayISO, dayKeyToday, dateOfDayKey, fmtDay,
   recipeById, startNewWeek, swapDay, groceryList, toggleHabit,
 } from "./store.js";
@@ -153,6 +153,13 @@ export function renderToday(main, navigate) {
               el("span", { class: "tag" }, `serves ${recipe.serves}`),
               recipe.tags.includes("kidsafe") && el("span", { class: "tag green" }, "kid friendly"),
             ),
+            (() => {
+              const n = timesCooked(recipe.id);
+              if (n < 2) return null;
+              const since = s.mealMemoryDates?.[recipe.id];
+              return el("p", { class: "tiny", style: "font-style:italic;margin:0.2rem 0 0" },
+                `This one has fed the table ${n === 2 ? "twice" : n + " times"}` + (since ? `, loved since ${fmtDay(since)}` : "") + ".");
+            })(),
             el("p", { class: "muted", style: "margin-top:0.4rem" }, recipe.why),
           )
         : el("div", {},
@@ -166,7 +173,21 @@ export function renderToday(main, navigate) {
       el("div", { class: "pulse-grid" }, pulses),
     ),
 
-    (() => {
+    ...[(() => {
+      // a letter is approaching: the most anticipation an app can honestly hold
+      const today = todayISO();
+      const soon = (s.capsules || []).filter((c) => !c.opened && c.openOn && c.openOn > today)
+        .map((c) => ({ c, days: Math.ceil((new Date(c.openOn + "T12:00:00") - new Date(today + "T12:00:00")) / 864e5) }))
+        .filter((x) => x.days <= 7)
+        .sort((a, b) => a.days - b.days)[0];
+      if (!soon) return null;
+      return el("div", { class: "card flat", style: "cursor:pointer", onclick: () => navigate("#/capsule") },
+        el("span", { class: "eyebrow" }, "Approaching"),
+        el("p", { style: "font-family:var(--font-head);margin:0.2rem 0 0" },
+          `A letter for ${soon.c.to} unseals ${soon.days === 1 ? "tomorrow" : "in " + soon.days + " days"}.`),
+      );
+    })()].filter(Boolean),
+    ...[(() => {
       const w = eatingWindow();
       if (!w && !s.fasting.activeStart) return null;
       if (w && w.mode === "fasting") {
@@ -188,8 +209,8 @@ export function renderToday(main, navigate) {
           w.canEat ? "It can reopen whenever you choose." : `It reopens at ${fmtClock(w.opens)}: ${h ? h + " h " : ""}${m2} min to go.`);
       }
       return null;
-    })(),
-    (() => {
+    })()].filter(Boolean),
+    ...[(() => {
       // the kept word: the kind thing you asked of this week, held where you can see it
       const c = s.checkins[0];
       if (!c || !c.kind || c.kindKept) return null;
@@ -204,7 +225,7 @@ export function renderToday(main, navigate) {
             renderToday(main, navigate);
           } }, "Done, and it was kind")),
       );
-    })(),
+    })()].filter(Boolean),
     (() => {
       const g = s.signals.readings.find((r) => r.type === "glucose");
       const k = s.signals.readings.find((r) => r.type === "ketone");
@@ -445,8 +466,8 @@ export function openRecipe(r) {
   const verdict = s.mealMemory[r.id];
   const setVerdict = (v) => {
     store.mutate((st) => {
-      if (st.mealMemory[r.id] === v) delete st.mealMemory[r.id];
-      else st.mealMemory[r.id] = v;
+      if (st.mealMemory[r.id] === v) { delete st.mealMemory[r.id]; delete st.mealMemoryDates[r.id]; }
+      else { st.mealMemory[r.id] = v; if (v === "loved" && !st.mealMemoryDates[r.id]) st.mealMemoryDates[r.id] = todayISO(); }
     });
     closeModal(); openRecipe(r);
   };
@@ -462,6 +483,13 @@ export function openRecipe(r) {
       r.tags.includes("gf") && el("span", { class: "tag" }, "gluten free"),
       r.tags.includes("nosugar") && el("span", { class: "tag" }, "no added sugar"),
     ),
+    (() => {
+      const n = timesCooked(r.id);
+      if (n < 2) return null;
+      const since = store.get().mealMemoryDates?.[r.id];
+      return el("p", { class: "tiny", style: "font-style:italic;margin:-0.2rem 0 0.6rem" },
+        `It has fed the table ${n === 2 ? "twice" : n + " times"}` + (since ? `, loved since ${fmtDay(since)}` : "") + ".");
+    })(),
     r.macros && el("p", { class: "tiny", style: "margin:-0.2rem 0 0.8rem" },
       `Per serve, approximately: ${Math.round(r.macros.kcal * 4.184 / 10) * 10} kJ (${r.macros.kcal} kcal) · protein ${r.macros.protein} g · fat ${r.macros.fat} g · carbs ${r.macros.carbs} g (sugars ${r.macros.sugars} g) · fibre ${r.macros.fibre} g. Computed from the listed quantities against published food-composition data (AFCD and USDA); rounded, a guide rather than a lab result.`),
     el("h3", {}, "Ingredients"),

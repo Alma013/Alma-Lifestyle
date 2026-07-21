@@ -1,5 +1,5 @@
 // Harta · service worker: offline app shell, network-first with cache fallback.
-const CACHE = "alma-v7";
+const CACHE = "alma-v8";
 const ASSETS = [
   "./", "./index.html", "./css/styles.css", "./manifest.webmanifest",
   "./js/app.js", "./js/store.js", "./js/ui.js", "./js/data.js", "./js/data2.js",

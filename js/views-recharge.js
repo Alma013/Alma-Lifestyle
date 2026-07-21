@@ -2,7 +2,7 @@
 // This is the part of the app that recharges rather than organises.
 
 import { el, icon, toast, openModal, closeModal } from "./ui.js";
-import { store, todayISO, uid, greeting, localDayOf } from "./store.js";
+import { store, todayISO, uid, greeting, localDayOf, claimMilestone } from "./store.js";
 import { passageForToday, eveningPassageForToday, PROMPTS, SOUNDSCAPES, STEADY_TECHNIQUES, STEADY_NOTE, ACHIEVER_TECHNIQUES, ACHIEVER_NOTE } from "./data2.js";
 import { speak, stopSpeaking, voiceAvailable } from "./voice.js";
 import { addJournalEntry } from "./idb.js";
@@ -95,7 +95,14 @@ export function renderRecharge(main, navigate) {
   const creditMinutes = () => {
     if (!breathStartedAt) return;
     const mins = Math.round((Date.now() - breathStartedAt) / 60000);
-    if (mins >= 1) store.mutate((st) => { st.sanctuaryMinutes += mins; });
+    if (mins >= 1) {
+      store.mutate((st) => { st.sanctuaryMinutes += mins; });
+      const total = store.get().sanctuaryMinutes;
+      const MILESTONES = { 60: "Your sixtieth quiet minute. An hour of stillness, gathered one breath at a time.", 100: "Your hundredth quiet minute. They were all real.", 250: "Two hundred and fifty quiet minutes. The sanctuary is a habit now.", 500: "Five hundred minutes of quiet. This is who you are these days." };
+      for (const [t, msg] of Object.entries(MILESTONES)) {
+        if (total >= Number(t) && claimMilestone("sanctuary-" + t)) { toast(msg); break; }
+      }
+    }
     breathStartedAt = null;
   };
   const startBtn = el("button", { class: "btn", onclick: () => {

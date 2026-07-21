@@ -44,6 +44,8 @@ const DEFAULT_STATE = {
   arrivalLast: null,    // ISO date the arrival passage last showed
   voiceOn: false,       // read-aloud with the device's own voice, user's choice
   sanctuaryMinutes: 0,  // lifetime minutes of breathing/sound, for gentle recognition
+  milestonesSeen: [],   // one-time quiet recognitions already given; they only ever count up
+  mealMemoryDates: {},  // { recipeId: ISO date it was first loved }
   week: null,           // { start: ISO(Mon), days: { mon: {recipeId|null, leftoverOf|null} }, checked: {itemKey:bool}, extras: [] }
   weekHistory: [],      // archived weeks (most recent first, cap 26)
   habitLogs: {},        // { "2026-07-20": { move:true, sleep:false, ... } }
@@ -352,6 +354,32 @@ export async function hashPin(pin) {
 
 export function uid() {
   return Math.random().toString(36).slice(2, 10);
+}
+
+// ---------- quiet milestones (cumulative, never breakable) ----------
+export function claimMilestone(key) {
+  if (state.milestonesSeen.includes(key)) return false;
+  store.mutate((s) => s.milestonesSeen.push(key));
+  return true;
+}
+
+// how many times a recipe has actually fed the table (planned days that have passed,
+// across the current week and the archived ones; leftover nights count as the pot's)
+export function timesCooked(recipeId) {
+  let n = 0;
+  const today = todayISO();
+  const countWeek = (w, onlyPast) => {
+    if (!w) return;
+    for (const dk of DAY_KEYS) {
+      const slot = w.days[dk];
+      if (!slot || slot.recipeId !== recipeId || slot.leftover) continue;
+      if (onlyPast && dateOfDayKey(w.start, dk) > today) continue;
+      n++;
+    }
+  };
+  countWeek(state.week, true);
+  for (const w of state.weekHistory) countWeek(w, false);
+  return n;
 }
 
 // ---------- fasting ----------

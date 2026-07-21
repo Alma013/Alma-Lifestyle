@@ -3,7 +3,7 @@
 // the capsule is for the future you, and for the people you love.
 
 import { el, icon, toast, openModal, closeModal } from "./ui.js";
-import { store, todayISO, fmtDay, uid } from "./store.js";
+import { store, todayISO, fmtDay, uid, claimMilestone } from "./store.js";
 import { addJournalEntry, listJournalEntries, getJournalEntry, deleteJournalEntry, exportJournal } from "./idb.js";
 
 // ---------- journal ----------
@@ -15,6 +15,14 @@ export function leaveJournal() {
   blobUrls.forEach((u) => URL.revokeObjectURL(u)); blobUrls = [];
 }
 let blobUrls = [];
+
+function journalMilestone() {
+  const n = (store.get().journalIndex || []).length;
+  const M = { 10: "Ten entries kept. The future you is already richer.", 25: "Twenty-five entries. This is becoming a real record of a real life.", 50: "Fifty entries kept. Whole seasons live in here now.", 100: "One hundred entries. What a gift you are leaving." };
+  for (const [t, msg] of Object.entries(M)) {
+    if (n >= Number(t) && claimMilestone("journal-" + t)) { toast(msg); break; }
+  }
+}
 
 export function renderJournal(main, navigate) {
   let recorder = null, chunks = [], recStart = 0;
@@ -80,7 +88,7 @@ export function renderJournal(main, navigate) {
     if (!file) return;
     const note = await askForNote("A line to remember it by (optional)");
     await addJournalEntry({ type: "photo", blob: file, text: note || "", tags: ["photo"] });
-    toast("Kept. The future you says thank you.");
+    toast("Kept. The future you says thank you."); journalMilestone();
     paintGrid();
   });
 
@@ -105,7 +113,7 @@ export function renderJournal(main, navigate) {
         await addJournalEntry({ type: "audio", blob, text: note || "", tags: ["voice"], seconds: secs });
         recBtnLabel.textContent = "Record a voice note";
         recBtn.classList.remove("danger");
-        toast(`Voice note kept (${secs}s)`);
+        toast(`Voice note kept (${secs}s)`); journalMilestone();
         paintGrid();
       };
       recorder.start();
