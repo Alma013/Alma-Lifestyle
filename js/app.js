@@ -16,7 +16,7 @@ const ROUTES = [
   { hash: "#/today", label: "Today", icon: "home", render: renderToday },
   { hash: "#/plan", label: "Meals", icon: "plan", render: renderPlan },
   { hash: "#/track", label: "Track", icon: "track", render: renderTrack },
-  { hash: "#/more", label: "More", icon: "more", render: renderMore },
+  { hash: "#/more", label: "The map", icon: "map", render: renderMore },
 ];
 const HIDDEN_ROUTES = [
   { hash: "#/recharge", render: renderRecharge, parent: "#/" },

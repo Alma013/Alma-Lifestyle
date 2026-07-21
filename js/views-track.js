@@ -302,29 +302,33 @@ export function openWhy(id) {
 // ---------- more: care + settings ----------
 export function renderMore(main, navigate) {
   const s = store.get();
-  const item = (hash, title, sub, ic) =>
-    el("button", { class: "card learn-card", style: "width:100%;text-align:left", onclick: () => navigate(hash) },
-      el("div", { class: "card-title-row" }, el("h3", {}, title), ic ? icon(ic, 18) : null),
-      el("p", { class: "one-liner" }, sub),
-    );
+  const door = (hash, ic, label, sub) => el("button", { class: "door", onclick: () => navigate(hash) },
+    icon(ic, 26), el("span", { class: "door-label" }, label), el("span", { class: "door-sub" }, sub));
+  const territory = (title, sub, doors) => el("div", { class: "card" },
+    el("h2", {}, title),
+    el("p", { class: "tiny", style: "margin:-0.2rem 0 0.6rem" }, sub),
+    el("div", { class: "door-grid", style: "grid-template-columns:repeat(3, 1fr)" }, ...doors));
   main.replaceChildren(
-    el("div", { class: "page-head" }, el("h1", {}, "More"),
-      el("p", {}, "Everything else the map holds, most used first.")),
-    item("#/counsel", "The counsel", "Strategy for hard situations: with a child, a partner, at work. The wisest sequence, with the words.", "heart"),
-    item("#/speak", "Speak with impact", "Eight lessons in being heard, practised aloud and kept in your journal.", "mic"),
-    item("#/learn", "Learn: the why", "Every rule with its source: the method, the five voices, Dr Li\u2019s table, the evidence cards.", "learn"),
-    item("#/journal", "Journal", "Photos, voice notes and words, kept for the future you.", "camera"),
-    item("#/capsule", "The capsule", "Letters sealed for later: your voice, kept for the people you love.", "mail"),
-    item("#/fasting", "Fasting", "Gentle eating windows, honest safety, a timer that never nags.", "hourglass"),
-    item("#/signals", "Signals", "Glucose, ketones and labs, explained personally with next steps.", "pulse"),
-    item("#/care", "Doctor visits", "Questions ready, one printable brief, the calendar kept. Private, optional PIN.", "steth"),
-    item("#/about", "What this app is", "The whole promise on one page, and a way to hand it to someone who needs it.", "heart"),
-    item("#/settings", "Settings and data", "Way of eating, goals, the reading voice, backup, and the promises this app makes."),
-    el("div", { class: "card flat" },
-      el("h3", {}, "About Harta"),
-      el("p", { class: "muted" }, "Built by someone who learned the hard way that the best time to care about your health is before you have to. Everything here follows one idea: know first, then choose."),
-      el("p", { class: "tiny" }, "Private like a paper journal, useful like an app: everything stays on this device, so it cannot be leaked, sold or fed to an ad machine. Medical decisions stay with your doctor, which is exactly why you can relax here."),
+    el("div", { class: "page-head" },
+      el("span", { class: "eyebrow" }, "Everything the app holds"),
+      el("h1", {}, "The map"),
+      el("p", {}, "Four territories. Each one earns its place every week."),
     ),
+    territory("Grow into yourself", "Strategy, voice and understanding: the part of the map that changes who walks it.",
+      [door("#/counsel", "heart", "The counsel", "for hard moments"),
+       door("#/speak", "mic", "Speak", "and be heard"),
+       door("#/learn", "learn", "Learn", "every why, sourced")]),
+    territory("Keep what matters", "The archive of a real life: for the future you, and for the people you love.",
+      [door("#/journal", "camera", "Journal", "photos and voice"),
+       door("#/capsule", "mail", "Letters", "sealed for later")]),
+    territory("Know your body", "Numbers explained, windows kept, visits prepared. Knowledge first, then choice.",
+      [door("#/signals", "pulse", "My numbers", "explained kindly"),
+       door("#/fasting", "hourglass", "Fasting", "a kitchen clock"),
+       door("#/care", "steth", "Doctor visits", "arrive prepared")]),
+    territory("The app itself", "What it promises, and the levers that make it yours.",
+      [door("#/about", "map", "What this is", "the whole promise"),
+       door("#/settings", "more", "Settings", "yours to shape")]),
+    el("p", { class: "tiny center" }, "Private like a paper journal, useful like an app: everything stays on this device, so it cannot be leaked, sold or fed to an ad machine. Medical decisions stay with your doctor, which is exactly why you can relax here."),
   );
 }
 
