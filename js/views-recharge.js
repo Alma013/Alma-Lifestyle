@@ -72,19 +72,21 @@ export function renderRecharge(main, navigate) {
   const word = el("div", { class: "breath-word", role: "status", "aria-live": "polite" }, "Ready");
   const count = el("div", { class: "breath-count" }, "Three minutes is a real reset. One is still real.");
   const howLine = el("p", { class: "tiny center", style: "max-width:26rem;margin:0.5rem auto 0" }, BREATH_PATTERNS[pattern].how);
+  // a living sky: each star is born near the centre and flies toward the viewer,
+  // one after another, growing and brightening as it passes
   const stars = el("div", { class: "breath-stars", "aria-hidden": "true" });
   const orbit = el("div", { class: "orbit" });
   stars.append(orbit);
-  for (let i = 0; i < 78; i++) {
-    const angle = Math.random() * 2 * Math.PI;
-    const radius = 18 + Math.random() * 78; // per cent of ring radius
+  for (let i = 0; i < 120; i++) {
     const st = el("i");
-    st.style.left = (50 + (radius / 2) * Math.cos(angle)) + "%";
-    st.style.top = (50 + (radius / 2) * Math.sin(angle)) + "%";
+    const angle = Math.random() * 2 * Math.PI;
+    const dist = 55 + Math.random() * 75;          // how far past the rim it flies (px)
+    st.style.setProperty("--fx", (Math.cos(angle) * dist).toFixed(1) + "px");
+    st.style.setProperty("--fy", (Math.sin(angle) * dist).toFixed(1) + "px");
     const size = 1 + Math.random() * 2.4;
     st.style.width = size + "px"; st.style.height = size + "px";
-    st.style.animationDuration = (2.2 + Math.random() * 3.8) + "s";
-    st.style.animationDelay = (Math.random() * 3) + "s";
+    st.style.animationDuration = (2.2 + Math.random() * 3.2) + "s";  // the flight, faster now
+    st.style.animationDelay = (Math.random() * 6).toFixed(2) + "s";   // staggered: they arrive one at a time
     orbit.append(st);
   }
   const ring = el("div", { class: "breath-ring sky" }, stars, word);

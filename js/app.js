@@ -54,6 +54,14 @@ function route() {
   const r = ROUTES.find((x) => x.hash === hash) || HIDDEN_ROUTES.find((x) => x.hash === hash) || ROUTES[0];
   renderNav(r.parent || r.hash);
   r.render(main, navigate);
+  if (r.parent) {
+    const back = document.createElement("button");
+    back.className = "btn ghost small back-btn";
+    back.setAttribute("aria-label", "Back");
+    back.textContent = "\u2190 Back";
+    back.addEventListener("click", () => (history.length > 1 ? history.back() : navigate(r.parent)));
+    main.prepend(back);
+  }
   main.focus({ preventScroll: true });
   window.scrollTo(0, 0);
 }

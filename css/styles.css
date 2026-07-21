@@ -295,13 +295,18 @@ textarea { min-height: 4.6rem; resize: vertical; }
 .breath-stars { position: absolute; inset: 0; }
 .breath-stars .orbit { position: absolute; inset: 0; animation: star-drift 90s linear infinite; }
 .breath-stars i {
-  position: absolute; border-radius: 50%;
+  position: absolute; left: 50%; top: 50%; border-radius: 50%;
   background: var(--cream);
   box-shadow: 0 0 4px rgba(234, 223, 200, 0.6);
-  animation: twinkle 3s ease-in-out infinite alternate;
+  opacity: 0;
+  animation-name: star-fly; animation-timing-function: linear; animation-iteration-count: infinite;
+}
+@keyframes star-fly {
+  0%   { transform: translate(-50%, -50%) scale(0.15); opacity: 0; }
+  12%  { opacity: 0.9; }
+  100% { transform: translate(calc(-50% + var(--fx)), calc(-50% + var(--fy))) scale(2.1); opacity: 0; }
 }
 @keyframes star-drift { to { transform: rotate(360deg); } }
-@keyframes twinkle { from { opacity: 0.25; } to { opacity: 0.95; } }
 .breath-ring.sky .breath-word { position: relative; z-index: 1; text-shadow: 0 1px 8px rgba(0, 0, 0, 0.55); color: var(--cream); }
 
 .breath-word { font-family: var(--font-head); font-size: 1.3rem; color: var(--ink); }
@@ -327,6 +332,8 @@ textarea { min-height: 4.6rem; resize: vertical; }
 @keyframes eq { 0%, 100% { height: 4px; } 50% { height: 12px; } }
 
 .prompt-card blockquote { font-family: var(--font-head); font-size: 1.1rem; margin: 0 0 0.5rem; }
+
+.back-btn { margin-bottom: 0.8rem; }
 
 /* the doors: the app at one glance */
 .door-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.5rem; }
