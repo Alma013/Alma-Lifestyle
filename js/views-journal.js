@@ -200,6 +200,7 @@ export function renderCapsule(main, navigate) {
               : sealed ? "Sealed until " + fmtFull(c.openOn)
               : "Ready to open"),
           el("div", { class: "btn-row", style: "margin-top:0.6rem" },
+            !c.opened ? el("button", { class: "link", onclick: () => editEnvelope(c, () => renderCapsule(main, navigate)) }, "edit the envelope") : null,
             sealed
               ? el("span", { class: "tiny" }, "It waits. That is the point.")
               : el("button", { class: "btn small" + (c.opened ? " ghost" : ""), onclick: () => {
@@ -240,6 +241,44 @@ export function renderCapsule(main, navigate) {
     ),
     ...list,
     el("p", { class: "tiny center", style: "margin-top:1rem" }, "Letters live only on this device, so they stay exactly as private as the moment you wrote them. Download a backup in Settings and keep it where your family can find it: one small file, your voice in it, safe for decades."),
+  );
+}
+
+// the envelope can be corrected; the sealed words cannot be peeked at
+function editEnvelope(c, after) {
+  const to = el("input", { type: "text", value: c.to });
+  const title = el("input", { type: "text", value: c.title });
+  const openOn = el("input", { type: "date", min: todayISO() });
+  if (c.openOn) openOn.value = c.openOn;
+  openModal(
+    el("h2", {}, "Edit the envelope"),
+    el("p", { class: "tiny" }, "Who it is for, what it is called, and when it unseals. The letter itself stays sealed; that is its dignity."),
+    el("div", { class: "field" }, el("label", {}, "For"), to),
+    el("div", { class: "field" }, el("label", {}, "Title"), title),
+    el("div", { class: "field" }, el("label", {}, "Sealed until"), openOn,
+      el("div", { class: "hint" }, "Clear the date to make it openable from today.")),
+    el("div", { class: "btn-row" },
+      el("button", { class: "btn", onclick: () => {
+        store.mutate((s) => {
+          const x = s.capsules.find((y) => y.id === c.id);
+          if (x) { x.to = to.value.trim() || x.to; x.title = title.value.trim() || x.title; x.openOn = openOn.value || null; }
+        });
+        closeModal(); toast("The envelope is corrected"); after();
+      } }, "Save"),
+      el("button", { class: "btn danger small", onclick: () => {
+        openModal(
+          el("h2", {}, "Let this letter go?"),
+          el("p", { class: "muted" }, "It will be gone for good, unread. Sometimes that is the right ending; only you know."),
+          el("div", { class: "btn-row" },
+            el("button", { class: "btn danger", onclick: () => {
+              store.mutate((s) => { s.capsules = s.capsules.filter((y) => y.id !== c.id); });
+              closeModal(); toast("Released"); after();
+            } }, "Let it go"),
+            el("button", { class: "btn ghost", onclick: () => { closeModal(); after(); } }, "Keep it"),
+          ),
+        );
+      } }, "Delete"),
+    ),
   );
 }
 
