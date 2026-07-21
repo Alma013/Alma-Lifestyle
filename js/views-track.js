@@ -311,7 +311,7 @@ export function renderMore(main, navigate) {
   main.replaceChildren(
     el("div", { class: "page-head" },
       el("span", { class: "eyebrow" }, "Everything the app holds"),
-      el("h1", {}, "The map"),
+      el("h1", {}, "The map of the app"),
       el("p", {}, "Four territories. Each one earns its place every week."),
     ),
     territory("Grow into yourself", "Strategy, voice and understanding: the part of the map that changes who walks it.",
