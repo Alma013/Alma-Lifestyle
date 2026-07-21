@@ -78,6 +78,17 @@ function renderNav(activeHash) {
   nav.replaceChildren(...ROUTES.map(make));
 }
 
+// ---------- appearance: the user's choice, with auto following the device ----------
+const darkMeta = document.querySelector('meta[name="theme-color"][media*="dark"]');
+const lightMeta = document.querySelector('meta[name="theme-color"][media*="light"]');
+function applyTheme() {
+  const pref = store.get().themePref || "auto";
+  const dark = pref === "auto" ? window.matchMedia("(prefers-color-scheme: dark)").matches : pref === "dark";
+  document.documentElement.dataset.theme = dark ? "dark" : "light";
+}
+window.matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if ((store.get().themePref || "auto") === "auto") applyTheme(); });
+applyTheme();
+
 window.addEventListener("hashchange", route);
 import { todayISO } from "./store.js";
 let routedDay = todayISO();
@@ -85,7 +96,7 @@ document.addEventListener("visibilitychange", () => {
   // refresh only when the DAY changed; never wipe typed answers on a mere app switch
   if (!document.hidden && todayISO() !== routedDay) { routedDay = todayISO(); route(); maybeShowArrival(); }
 });
-store.subscribe(() => {/* views re-render themselves; hook kept for future needs */});
+store.subscribe(() => applyTheme());
 route();
 maybeShowArrival(); // the daily passage, once per day, after the first paint
 

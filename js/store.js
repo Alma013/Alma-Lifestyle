@@ -46,6 +46,7 @@ const DEFAULT_STATE = {
   journalIndex: [],     // metadata only; photo/audio blobs live in IndexedDB
   arrivalLast: null,    // ISO date the arrival passage last showed
   voiceOn: false,
+  themePref: "auto",     // "auto" follows the device; "light" and "dark" are the user's call
   introSeen: false,      // the what-this-app-can-do card on the first page       // read-aloud with the device's own voice, user's choice
   sanctuaryMinutes: 0,  // lifetime minutes of breathing/sound, for gentle recognition
   milestonesSeen: [],   // one-time quiet recognitions already given; they only ever count up

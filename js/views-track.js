@@ -720,6 +720,16 @@ export function renderSettings(main, navigate) {
       ),
     ),
     el("div", { class: "card" },
+      el("h2", {}, "Appearance"),
+      el("p", { class: "muted" }, "The warm dark is the brand\u2019s home; the cream light is the same room with the curtains open. Yours to choose."),
+      el("div", { class: "chip-row" },
+        ...[["auto", "Follow my device"], ["light", "Light"], ["dark", "Dark"]].map(([id, label]) =>
+          el("button", {
+            class: "chip" + ((s.themePref || "auto") === id ? " on" : ""),
+            onclick: () => { store.update({ themePref: id }); renderSettings(main, navigate); },
+          }, label))),
+    ),
+    el("div", { class: "card" },
       el("h2", {}, "The reading voice"),
       el("p", { class: "muted" }, "When it is on, Harta can read passages, prompts and techniques aloud with your device\u2019s own voice, so the words can reach you with your eyes closed. Nothing is sent anywhere; the voice lives on the device."),
       voiceAvailable()
