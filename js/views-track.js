@@ -744,7 +744,22 @@ export function renderSettings(main, navigate) {
               for (const vo of ranked) sel.append(el("option", { value: vo.name, selected: s.voiceName === vo.name ? "" : null }, vo.name.replace(/ \(.*\)/, "") + " · " + vo.lang));
               sel.addEventListener("change", () => { setVoiceByName(sel.value); speak("This is how I sound. Keep me, or choose another."); });
               return el("div", { class: "field", style: "margin-top:0.4rem" }, el("label", {}, "Which voice"), sel,
-                el("p", { class: "hint" }, "The warmest voices are listed first. On iPhone and Mac, downloading an enhanced Siri voice in system settings makes this genuinely human."));
+                el("p", { class: "hint" }, "The warmest voices are listed first. ",
+                  el("button", { class: "link", onclick: () => {
+                    openModal(
+                      el("h2", {}, "Make the voice genuinely human"),
+                      el("p", { class: "muted" }, "The robotic sound is the device\u2019s basic voice. Every phone and computer hides far better ones; they just need downloading once. After that, come back here and pick the new voice from the list."),
+                      el("h3", {}, "iPhone and iPad"),
+                      el("p", { class: "muted", style: "font-size:0.9rem" }, "Settings \u2192 Accessibility \u2192 Spoken Content \u2192 Voices \u2192 English. Download an Enhanced or Premium voice (Karen and Matilda are the Australian ones; Zoe and Ava are lovely too). The Premium ones are near-human."),
+                      el("h3", {}, "Mac"),
+                      el("p", { class: "muted", style: "font-size:0.9rem" }, "System Settings \u2192 Accessibility \u2192 Spoken Content \u2192 System Voice \u2192 Manage Voices. Tick the Premium versions and let them download."),
+                      el("h3", {}, "Android"),
+                      el("p", { class: "muted", style: "font-size:0.9rem" }, "Settings \u2192 Accessibility \u2192 Text-to-speech output \u2192 Google engine \u2192 Install voice data, and pick a higher-quality English voice."),
+                      el("h3", {}, "Windows"),
+                      el("p", { class: "muted", style: "font-size:0.9rem" }, "Settings \u2192 Time and language \u2192 Speech \u2192 Add voices. The Natural voices are the good ones."),
+                      el("div", { class: "notice", style: "margin-top:0.6rem" }, "Everything stays on the device either way: the voice is downloaded once and speaks locally, so the privacy promise holds."),
+                    );
+                  } }, "Make it sound human: the two-minute fix")));
             })() : null,
           )
         : el("p", { class: "tiny" }, "This device does not offer speech; the words will wait in writing."),
