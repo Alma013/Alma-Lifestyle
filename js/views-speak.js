@@ -78,7 +78,7 @@ export function renderCounsel(main) {
       el("p", { class: "tiny" }, "General wisdom from named frameworks, tailored by your choices; it cannot know the people involved the way you do. For anything involving safety, a professional beats a playbook, today."),
     );
     result.scrollIntoView({ behavior: "smooth", block: "start" });
-    if (voiceAvailable() && store.get().voiceOn) speakAloud(readable);
+    if (voiceAvailable() && store.get().voiceOn) speakAloud(readable, "inform");
   };
 
   main.replaceChildren(

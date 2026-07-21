@@ -54,19 +54,31 @@ function showStopPill() {
 }
 function hideStopPill() { if (stopPill) stopPill.style.display = "none"; }
 
-export function speak(text) {
+// two registers, both human-paced:
+// "soothe" for passages, meditations and techniques: slow, low, with a breath between sentences
+// "inform" for practical answers: lighter and a touch quicker
+const REGISTERS = {
+  soothe: { rate: 0.78, pitch: 0.96 },
+  inform: { rate: 0.92, pitch: 1.0 },
+};
+
+export function speak(text, mode = "soothe") {
   if (!voiceAvailable()) return false;
   stopSpeaking();
-  const u = new SpeechSynthesisUtterance(text);
   if (!chosen) chosen = pickVoice();
-  if (chosen) u.voice = chosen;
-  u.rate = 0.88;   // unhurried
-  u.pitch = 1.0;
-  u.volume = 1;
-  u.onend = hideStopPill;
-  u.onerror = hideStopPill;
+  const reg = REGISTERS[mode] || REGISTERS.soothe;
+  // one utterance per sentence gives the engine natural pauses to breathe in
+  const sentences = String(text).match(/[^.!?\u2026]+[.!?\u2026]+["\u201D\u2019]?|[^.!?\u2026]+$/g) || [text];
   showStopPill();
-  speechSynthesis.speak(u);
+  sentences.forEach((s2, i) => {
+    const u = new SpeechSynthesisUtterance(s2.trim());
+    if (chosen) u.voice = chosen;
+    u.rate = reg.rate;
+    u.pitch = reg.pitch;
+    u.volume = 1;
+    if (i === sentences.length - 1) { u.onend = hideStopPill; u.onerror = hideStopPill; }
+    speechSynthesis.speak(u);
+  });
   return true;
 }
 export function stopSpeaking() {

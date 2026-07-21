@@ -67,7 +67,7 @@ export function openTalk() {
         transcript.textContent = finalText ? "“" + finalText + "”" : "I did not catch that.";
         const a = answer(finalText);
         reply.textContent = a;
-        if (store.get().voiceOn) speak(a);
+        if (store.get().voiceOn) speak(a, "inform");
       },
     });
   };
