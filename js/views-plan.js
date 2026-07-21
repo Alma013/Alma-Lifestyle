@@ -506,6 +506,44 @@ function saveCustomRecipe(parsed, main) {
   closeModal(); renderRecipes(main);
   toast("\u201C" + parsed.name + "\u201D is in the kitchen now");
 }
+// Instagram, YouTube and TikTok do not let apps read captions directly, so Harta
+// fetches the public title where possible, keeps the video one tap away, and
+// shapes the caption if you paste it. Honest, and still a real library.
+async function videoFlow(url, main) {
+  let title = "";
+  try {
+    const res = await fetch("https://noembed.com/embed?url=" + encodeURIComponent(url));
+    const j = await res.json();
+    if (j && j.title) title = j.title;
+  } catch {}
+  const titleInput = el("input", { type: "text", value: title, placeholder: "Name this recipe" });
+  const capArea = el("textarea", { placeholder: "Paste the caption or description here (optional). If it holds ingredients and steps, Harta shapes them; if not, the video is still saved to your library.", style: "min-height:8rem" });
+  openModal(
+    el("h2", {}, "A video recipe"),
+    el("p", { class: "muted" }, "The video stays one tap away in your kitchen. Paste its caption and Harta will shape the ingredients and method out of it; video platforms do not let apps read captions on their own."),
+    el("div", { class: "field" }, el("label", {}, "Title"), titleInput),
+    el("div", { class: "field" }, el("label", {}, "Caption or description"), capArea),
+    el("button", { class: "btn", onclick: () => {
+      const name = titleInput.value.trim() || "A video recipe";
+      const parsed = capArea.value.trim() ? recipeFromPaste(name + String.fromCharCode(10) + capArea.value, url) : null;
+      const id = "custom-" + Math.random().toString(36).slice(2, 8);
+      store.mutate((st) => {
+        st.customRecipes.push({
+          id, name, video: url,
+          time: parsed?.time || 30, total: parsed?.total || 30, serves: parsed?.serves || 4,
+          tags: ["custom", "video"],
+          ingredients: parsed?.ingredients || [],
+          method: parsed?.method || ["Watch the video: the steps live there."],
+          why: "Saved by you from " + new URL(url).hostname.replace("www.", "") + "." + (parsed?.ingredients?.length ? " It plans and shops like any recipe." : " Paste its caption any time to make it plannable."),
+          whySource: new URL(url).hostname.replace("www.", ""),
+        });
+      });
+      closeModal(); renderRecipes(main);
+      toast(parsed?.ingredients?.length ? "\u201C" + name + "\u201D is in the kitchen, video and all" : "Saved to your library. The video is one tap away.");
+    } }, "Save to my kitchen"),
+  );
+}
+
 function addFromLinkModal(main, mode = "link") {
   const urlInput = el("input", { type: "url", placeholder: "https://\u2026 paste the recipe page" });
   const status = el("p", { class: "tiny" }, "");
@@ -533,6 +571,7 @@ function addFromLinkModal(main, mode = "link") {
         const url = urlInput.value.trim();
         if (!/^https?:\/\//.test(url)) { toast("A full link, starting with https"); return; }
         status.textContent = "Reading the page\u2026";
+        if (/(instagram\.com|youtube\.com|youtu\.be|tiktok\.com)/i.test(url)) { videoFlow(url, main); return; }
         try {
           const res = await fetch(url, { mode: "cors" });
           const html = await res.text();
@@ -624,6 +663,7 @@ export function openRecipe(r) {
     })(),
     r.macros && el("p", { class: "tiny", style: "margin:-0.2rem 0 0.8rem" },
       `Per serve, approximately: ${Math.round(r.macros.kcal * 4.184 / 10) * 10} kJ (${r.macros.kcal} kcal) · protein ${r.macros.protein} g · fat ${r.macros.fat} g · carbs ${r.macros.carbs} g (sugars ${r.macros.sugars} g) · fibre ${r.macros.fibre} g. Computed from the listed quantities against published food-composition data (AFCD and USDA); rounded, a guide rather than a lab result.`),
+    r.video ? el("a", { class: "btn secondary small", href: r.video, target: "_blank", rel: "noopener", style: "margin-bottom:0.8rem" }, "\u25B6 Watch the video") : null,
     el("h3", {}, "Ingredients"),
     el("ul", { class: "ingredients" }, r.ingredients.map((i) => {
       const warn = ingredientWarning(i.n);

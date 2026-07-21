@@ -282,6 +282,8 @@ export function renderMore(main, navigate) {
     );
   main.replaceChildren(
     el("div", { class: "page-head" }, el("h1", {}, "More")),
+    item("#/counsel", "The counsel", "Strategy for hard situations: with a child, a partner, at work. The wisest sequence, with the words.", "heart"),
+    item("#/speak", "Speak with impact", "Eight lessons in being heard: structure, story, silence, honest influence.", "mic"),
     item("#/learn", "Learn: the why", "Every rule with its source: the method, the five voices, Dr Li\u2019s table, the evidence cards.", "learn"),
     item("#/journal", "Journal", "Photos, voice notes and words, kept for the future you.", "camera"),
     item("#/capsule", "The capsule", "Letters sealed for later: your voice, kept for the people you love.", "mail"),

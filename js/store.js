@@ -169,6 +169,7 @@ export function eligibleRecipes() {
   const p = state.profile;
   const excluded = activeExclusions();
   return allRecipes().filter((r) => {
+    if (!r.ingredients || !r.ingredients.length) return false; // video library cards plan nothing until they have ingredients
     if (state.eatingStyle === "keto" && !r.tags.includes("keto")) return false;
     if (state.eatingStyle === "keto" && state.ketoStrict && ((r.netCarbs || 99) > 8 || !r.tags.includes("nosugar"))) return false;
     for (const pref of p.dietPrefs || []) if (!r.tags.includes(pref)) return false;

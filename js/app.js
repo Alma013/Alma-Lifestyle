@@ -7,6 +7,7 @@ import { renderTrack, renderLearn, renderMore, renderCareGate, renderSettings, r
 import { renderRecharge, leaveRecharge, maybeShowArrival } from "./views-recharge.js";
 import { renderFasting, renderSignals, leaveFasting } from "./views-signals.js";
 import { renderJournal, renderCapsule, leaveJournal } from "./views-journal.js";
+import { renderCounsel, renderSpeak } from "./views-speak.js";
 
 // The sanctuary comes first: the app opens into Recharge, and the practical
 // day (dinner, plan, numbers) waits one tap away. Uplift before admin.
@@ -29,6 +30,8 @@ const HIDDEN_ROUTES = [
   { hash: "#/care", render: renderCareGate, parent: "#/more" },
   { hash: "#/settings", render: renderSettings, parent: "#/more" },
   { hash: "#/about", render: renderAbout, parent: "#/more" },
+  { hash: "#/counsel", render: renderCounsel, parent: "#/more" },
+  { hash: "#/speak", render: renderSpeak, parent: "#/more" },
 ];
 
 const main = document.getElementById("main");

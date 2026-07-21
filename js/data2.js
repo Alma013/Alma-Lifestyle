@@ -79,13 +79,10 @@ export const SOUNDSCAPES = [
   { id: "glow-528", name: "Golden tone", sub: "528 Hz slow swell", engine: "pad", base: 132 },
   { id: "morning-light", name: "Morning light", sub: "a brighter lift, majors and air", engine: "pad", base: 165, bright: true },
   { id: "open-sky", name: "Open sky", sub: "wide, hopeful, unhurried", engine: "pad", base: 220, bright: true },
-  { id: "piano", name: "Piano", sub: "slow, cinematic, Havasi mood", engine: "piano" },
+  { id: "piano", name: "Piano", sub: "slow cinematic piano, felt and warm", engine: "piano" },
   { id: "bowls", name: "Singing bowls", sub: "bronze rings that breathe", engine: "bowls" },
   { id: "kalimba", name: "Kalimba", sub: "thumb-piano, bright and kind", engine: "kalimba" },
   { id: "chimes", name: "Wind chimes", sub: "sparse bells on a soft breeze", engine: "chimes" },
-  { id: "ocean", name: "Ocean air", sub: "slow waves of breath", engine: "ocean" },
-  { id: "night-rain", name: "Night rain", sub: "soft, steady, close", engine: "rain" },
-  { id: "stream", name: "Forest stream", sub: "water over stones", engine: "stream" },
 ];
 
 
@@ -217,6 +214,118 @@ export const ACHIEVER_TECHNIQUES = [
 export const ACHIEVER_NOTE = "State first, then the task. None of this is hustle; it is the same gentleness as the rest of Harta, pointed forward.";
 
 export const STEADY_NOTE = "These tools are for living alongside managed pain and big feelings. Pain that is new, severe or frightening is a same-day doctor conversation, not a breathing exercise. And if the dark ever gets heavy, Lifeline is there around the clock on 13 11 14.";
+
+// ---------- the counsel: strategy for difficult situations ----------
+// Frameworks with real evidence or deep clinical use, composed on-device.
+export const COUNSEL_WHO = [
+  ["child", "My child"], ["partner", "My partner"], ["family", "Family"], ["colleague", "A colleague"],
+  ["boss", "A manager"], ["friend", "A friend"], ["medical", "A doctor or the system"], ["myself", "Myself"],
+];
+export const COUNSEL_WANT = [
+  ["repair", "Protect the relationship"], ["outcome", "Reach an outcome"], ["boundary", "Hold a boundary"],
+  ["understood", "Be understood"], ["deescalate", "Cool it down first"],
+];
+export const COUNSEL_PLAYS = {
+  child: {
+    name: "With a child",
+    principle: "Connect before you correct. A child in a storm cannot hear a lesson; a child who feels felt can.",
+    steps: [
+      "Regulate yourself first: one slow exhale, drop your shoulders, lower your voice below theirs.",
+      "Name what you see without judgement: \u201CYou are really angry that the game ended.\u201D Feeling named is feeling tamed.",
+      "Hold the limit warmly: the boundary stays, the love is loud. \u201CI won\u2019t let you hit. You can be angry.\u201D",
+      "Offer two acceptable choices, both of which you can live with. Choice returns dignity.",
+      "Repair later, in calm: ask what happened for them, tell them what happened for you, plan together for next time.",
+    ],
+    say: ["\u201CYou wanted\u2026 and it did not happen. That is genuinely hard.\u201D", "\u201CI\u2019m on your side, and the answer is still no.\u201D", "\u201CDo you want to do it now, or after dinner? You choose.\u201D"],
+    avoid: "Reasoning mid-meltdown, sarcasm, comparing them to siblings, winning. The goal is a child who trusts you with their worst moments.",
+    source: "Faber and Mazlish, How to Talk So Kids Will Listen (1980); Siegel, The Whole-Brain Child (2011); Gottman's emotion coaching",
+  },
+  partner: {
+    name: "With a partner",
+    principle: "Soft start-up decides the fight. How a conversation begins predicts how it ends better than what it is about.",
+    steps: [
+      "Start with I, a feeling and a specific event: never \u201Cyou always\u201D.",
+      "One issue only. The archive stays closed.",
+      "Listen to understand and prove it: say their side back until they say \u201Cyes, that\u2019s it\u201D before you answer it.",
+      "Accept influence: find the part of their view that is right and say so first.",
+      "If either of you floods, pause by agreement (twenty minutes, named return time), not by walking out.",
+    ],
+    say: ["\u201CWhen X happened, I felt Y, because Z matters to me. What I need is\u2026\u201D", "\u201CLet me check I have you: you\u2019re saying\u2026 did I get it?\u201D", "\u201CYou\u2019re right that\u2026 And I\u2019d add\u2026\u201D"],
+    avoid: "Criticism of character, contempt in any costume, defensiveness, the silent wall. These four predict the end of relationships more reliably than conflict itself.",
+    source: "Gottman and Silver, The Seven Principles (1999); Rosenberg, Nonviolent Communication (2003)",
+  },
+  work: {
+    name: "At work",
+    principle: "Separate the person from the problem, and interests from positions. Ask what they need, not what they demand.",
+    steps: [
+      "Before the room: write your objective in one sentence and your walk-away line. Clarity in, clarity out.",
+      "Open with shared purpose: name the goal you both hold before the point where you differ.",
+      "State facts first, story second, and label your story as a story: \u201CHere is what I observed\u2026 the story I\u2019m telling myself is\u2026\u201D",
+      "Ask a real question and stop talking. Silence does the heavy lifting.",
+      "Close by naming who does what by when, out loud. Vague endings undo good conversations.",
+    ],
+    say: ["\u201CWe both want this project to land well. Where I see a risk is\u2026\u201D", "\u201CHelp me understand what matters most on your side.\u201D", "\u201CSo we\u2019re agreed: I\u2019ll\u2026 you\u2019ll\u2026 by Friday.\u201D"],
+    avoid: "Arguing positions instead of interests, email for anything hot, sarcasm in writing, agreeing in the room and disagreeing in the corridor.",
+    source: "Fisher and Ury, Getting to Yes (1981); Patterson et al., Crucial Conversations (2002)",
+  },
+  boundary: {
+    name: "Holding a boundary",
+    principle: "A boundary is a sentence about what you will do, not a debate about what they should do.",
+    steps: [
+      "Describe the situation in one neutral sentence.",
+      "Express the effect on you, briefly, without accusation.",
+      "Assert the ask in one clear sentence. One.",
+      "Reinforce: name what saying yes makes possible for both of you.",
+      "Stay: repeat the same sentence calmly as often as needed. No new arguments; the broken-record is the technique.",
+    ],
+    say: ["\u201CI\u2019m not available for that.\u201D", "\u201CI want to help, and I can do X. I can\u2019t do Y.\u201D", "\u201CAs I said, that doesn\u2019t work for me.\u201D"],
+    avoid: "Over-explaining (each reason is a handle to pull), apologising for existing, yes-then-resentment. A kind no beats a bitter yes every time.",
+    source: "DEAR MAN, DBT interpersonal effectiveness (Linehan); assertiveness training literature",
+  },
+  deescalate: {
+    name: "Cooling it down",
+    principle: "Nobody reasons at 140 beats per minute. The first strategic move in any hot moment is temperature, not content.",
+    steps: [
+      "Body first: exhale long, feet on the floor, voice slower and lower than theirs.",
+      "Acknowledge the feeling without conceding the point: \u201CI can see this really matters to you.\u201D",
+      "Ask one open question and genuinely listen. Attacked people expect defence; curiosity disarms.",
+      "If you caused hurt, own your piece cleanly and specifically. Partial apologies reignite.",
+      "If heat keeps rising, postpone with respect and a named time: retreat with a return date is strategy, not surrender.",
+    ],
+    say: ["\u201CYou might be right. Tell me more.\u201D", "\u201CI want to get this right rather than fast. Can we pick it up at four?\u201D", "\u201CThe part I got wrong was\u2026 I\u2019m sorry for that part.\u201D"],
+    avoid: "\u201CCalm down\u201D (it never has), matching volume, audience battles: move any hot conversation away from onlookers.",
+    source: "Verbal de-escalation practice (crisis intervention literature); Stone, Patton and Heen, Difficult Conversations (1999)",
+  },
+};
+
+// ---------- speak: the craft of being heard ----------
+export const SPEAK_LESSONS = [
+  { id: "prep", title: "Land the point in four moves", one: "Point, reason, example, point. The oldest structure that still wins rooms.",
+    body: "Say the point first, in one sentence. Give the reason. Make it real with one concrete example. Then say the point again in fresh words. Listeners forgive almost anything except not knowing what you are asking of them.",
+    practice: "Take something you want this week and say it aloud in PREP form, under thirty seconds.", strength: "strong", source: "Classical rhetoric; toastmasters and speechcraft practice" },
+  { id: "concrete", title: "Speak in things, not abstractions", one: "\u201C204 days\u201D beats \u201Ca long time\u201D. Specifics are what memory keeps.",
+    body: "Abstract words slide off; concrete ones stick and travel. \u201CImprove communication\u201D is fog; \u201Canswer within a day, even if the answer is \u2018not yet\u2019\u201D is a sentence people can repeat to someone else, which is the real test of impact.",
+    practice: "Catch one abstraction in your own speech today and replace it with a number, an object or a moment.", strength: "strong", source: "Heath and Heath, Made to Stick (2007); concreteness effects in memory research" },
+  { id: "pause", title: "The pause is the power", one: "Silence after your point is confidence made audible.",
+    body: "Rushing signals doubt; the pause signals weight. Stop fully at the end of a sentence. Let the silence sit while the point lands. In negotiation and in parenting alike, whoever is comfortable with silence holds the room.",
+    practice: "In your next conversation, finish one sentence and count two full beats before the next.", strength: "emerging", source: "Speech pacing research; negotiation practice" },
+  { id: "story", title: "Carry the point inside a story", one: "A person, a struggle, a turn. Stories are the packaging attention accepts.",
+    body: "Data convinces the convinced; story reaches the rest. The smallest working story has a person the listener can see, a difficulty they can feel and a turn that carries your point. Ten seconds is enough: \u201CLast Tuesday a patient asked me\u2026\u201D",
+    practice: "Find one ten-second story that carries the point you make most often.", strength: "strong", source: "Narrative persuasion research; Heath and Heath (2007)" },
+  { id: "influence", title: "Influence as illumination", one: "Show people clearly, and let the seeing do the moving. Influence that needs hiding is not influence you want.",
+    body: "The classic levers of influence are real: people follow those they trust, reciprocate care, honour their own commitments, move with those like them, and act when things are scarce or urgent. Use them in the open: show your credentials by being useful, invite small commitments honestly, name real deadlines only. The test is simple: would the influence survive the other person knowing exactly what you are doing? If yes, it is illumination. If no, it is manipulation, and it costs you the only currency that compounds: being believed next time.",
+    practice: "Before your next ask, write the one sentence you would be comfortable with the other person reading over your shoulder.", strength: "strong", source: "Cialdini, Influence (1984), held to the illumination standard" },
+  { id: "ask", title: "Ask so it can be given", one: "Clear, specific, one sentence, then quiet.",
+    body: "Most asks fail by being fog: too hedged to refuse or grant. Name exactly what you want, from whom, by when, and why it serves the shared goal. Then stop. The person who keeps talking after the ask is negotiating against themselves.",
+    practice: "Write your biggest current ask as one sentence with a name and a date in it.", strength: "strong", source: "DEAR MAN (Linehan); negotiation literature" },
+  { id: "listen", title: "Listening is the fastest way to be heard", one: "People cannot take in your point while theirs is still unheld.",
+    body: "Prove you heard before you answer: say their view back until they agree you have it. This is not conceding; it is clearing the channel. In hard conversations the sequence is always the same: their point held, then yours lands.",
+    practice: "Once today, answer with their point first: \u201CSo what matters to you here is\u2026\u201D and only then your own.", strength: "strong", source: "Motivational interviewing evidence; Rogers; Crucial Conversations (2002)" },
+  { id: "voice", title: "The breath under the voice", one: "A supported breath is a steady voice. The sanctuary and the boardroom use the same muscle.",
+    body: "Nerves live in the breath: shallow air makes a thin, fast, high voice. Before speaking, one slow exhale, then speak on the top of a full breath, ending sentences downward rather than upward. Downward endings sound like conclusions; upward ones sound like questions asked of your own point.",
+    practice: "Read one paragraph aloud ending every sentence with a falling tone. Feel the difference in authority.", strength: "emerging", source: "Voice pedagogy; speech-production research" },
+];
+export const SPEAK_NOTE = "Everything here obeys one rule from the house constitution: illuminate, never manipulate. Impact that survives daylight.";
 
 // ---------- fasting ----------
 export const FAST_PROTOCOLS = [

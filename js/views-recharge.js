@@ -72,13 +72,13 @@ export function renderRecharge(main, navigate) {
   const count = el("div", { class: "breath-count" }, "Three minutes is a real reset. One is still real.");
   const howLine = el("p", { class: "tiny center", style: "max-width:26rem;margin:0.5rem auto 0" }, BREATH_PATTERNS[pattern].how);
   const stars = el("div", { class: "breath-stars", "aria-hidden": "true" });
-  for (let i = 0; i < 26; i++) {
+  for (let i = 0; i < 78; i++) {
     const angle = Math.random() * 2 * Math.PI;
     const radius = 18 + Math.random() * 78; // per cent of ring radius
     const st = el("i");
     st.style.left = (50 + (radius / 2) * Math.cos(angle)) + "%";
     st.style.top = (50 + (radius / 2) * Math.sin(angle)) + "%";
-    const size = 1.5 + Math.random() * 2.2;
+    const size = 1 + Math.random() * 2.4;
     st.style.width = size + "px"; st.style.height = size + "px";
     st.style.animationDuration = (2.2 + Math.random() * 3.8) + "s";
     st.style.animationDelay = (Math.random() * 3) + "s";
@@ -224,10 +224,10 @@ export function renderRecharge(main, navigate) {
           renderRecharge(main, navigate);
         } }, "Close the day"),
         el("button", { class: "btn ghost small", onclick: () => {
-          const scape = SOUNDSCAPES.find((x) => x.id === "night-rain");
+          const scape = SOUNDSCAPES.find((x) => x.id === "bowls");
           if (scape) playScape(scape);
           document.querySelector(".chip-row .chip:first-child")?.click();
-          toast("Night rain on. Breathe toward sleep.");
+          toast("Singing bowls on. Breathe toward sleep.");
         } }, "Breathe toward sleep"),
         voiceAvailable() && s.voiceOn ? el("button", { class: "link", onclick: () => speak(ev.text + ". " + ev.ref) }, "Listen") : null,
       ),
@@ -253,6 +253,11 @@ export function renderRecharge(main, navigate) {
       el("div", { class: "btn-row", style: "justify-content:center" }, startBtn),
     ),
 el("div", { class: "card" },
+      el("h2", {}, "Sound"),
+      el("div", { class: "sound-grid" }, tiles),
+      el("p", { class: "tiny", style: "margin-top:0.7rem" }, el("button", { class: "link", onclick: () => openWhy("sound-calm") }, "Why this works, honestly")),
+    ),
+    el("div", { class: "card" },
       el("h2", {}, "For the state of an achiever"),
       el("p", { class: "muted" }, "Six ways to get to the state before the task: pre-decisions, rehearsal, self-coaching, movement, momentum and the reserve."),
       el("div", { class: "chip-row" },
@@ -312,11 +317,6 @@ el("div", { class: "card" },
         );
       })(),
       el("p", { class: "tiny" }, "Prompts follow one idea: the hardest moments are also the clearest. What they showed you is yours to keep."),
-    ),
-    el("div", { class: "card" },
-      el("h2", {}, "Sound"),
-      el("div", { class: "sound-grid" }, tiles),
-      el("p", { class: "tiny", style: "margin-top:0.7rem" }, el("button", { class: "link", onclick: () => openWhy("sound-calm") }, "Why this works, honestly")),
     ),
     el("div", { class: "card" },
       el("h2", {}, "For the hard moments"),
