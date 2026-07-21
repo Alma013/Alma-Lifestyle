@@ -273,7 +273,7 @@ textarea { min-height: 4.6rem; resize: vertical; }
 .breath-ring {
   width: min(58vw, 240px); aspect-ratio: 1; border-radius: 50%;
   display: flex; align-items: center; justify-content: center;
-  border: 1.5px solid var(--line);
+  border: none;
   background: radial-gradient(circle at 50% 42%, var(--accent-soft), transparent 68%);
   transition: box-shadow var(--breath-dur, 4s) ease;
 }
@@ -289,8 +289,8 @@ textarea { min-height: 4.6rem; resize: vertical; }
   background:
     radial-gradient(circle at 50% 42%, var(--accent-soft), transparent 62%),
     radial-gradient(circle at 30% 70%, rgba(96, 116, 156, 0.12), transparent 55%),
-    radial-gradient(circle at 50% 50%, #100E14 0%, #17130F 78%);
-  border-color: rgba(234, 223, 200, 0.18);
+    radial-gradient(circle at 50% 50%, #100E14 0%, rgba(16, 14, 20, 0) 72%);
+  border: none;
 }
 .breath-stars { position: absolute; inset: 0; }
 .breath-stars .orbit { position: absolute; inset: 0; animation: star-drift 90s linear infinite; }
