@@ -41,7 +41,9 @@ export function navigate(hash) {
   else location.hash = hash;
 }
 
+import { stopSpeaking as stopVoiceOnRoute } from "./voice.js";
 function route() {
+  stopVoiceOnRoute(); // changing rooms silences the reader
   leaveRecharge(); // stop any breathing timers when the view changes
   leaveJournal();  // release the microphone if a recording was left running
   leaveFasting();  // clear the fasting tick

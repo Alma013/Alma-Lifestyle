@@ -39,6 +39,21 @@ if ("speechSynthesis" in window) {
 export function voiceAvailable() { return "speechSynthesis" in window; }
 export function voiceOn() { return !!store.get().voiceOn; }
 
+// a floating stop control that exists whenever the voice is talking
+let stopPill = null;
+function showStopPill() {
+  if (!stopPill) {
+    stopPill = document.createElement("button");
+    stopPill.className = "voice-stop";
+    stopPill.setAttribute("aria-label", "Stop the voice");
+    stopPill.textContent = "\u25A0 Stop voice";
+    stopPill.addEventListener("click", stopSpeaking);
+    document.body.append(stopPill);
+  }
+  stopPill.style.display = "inline-flex";
+}
+function hideStopPill() { if (stopPill) stopPill.style.display = "none"; }
+
 export function speak(text) {
   if (!voiceAvailable()) return false;
   stopSpeaking();
@@ -48,12 +63,19 @@ export function speak(text) {
   u.rate = 0.88;   // unhurried
   u.pitch = 1.0;
   u.volume = 1;
+  u.onend = hideStopPill;
+  u.onerror = hideStopPill;
+  showStopPill();
   speechSynthesis.speak(u);
   return true;
 }
 export function stopSpeaking() {
   if (voiceAvailable()) speechSynthesis.cancel();
+  hideStopPill();
 }
+// leaving the page must never leave a voice talking behind it
+window.addEventListener("pagehide", () => { try { speechSynthesis.cancel(); } catch {} });
+window.addEventListener("beforeunload", () => { try { speechSynthesis.cancel(); } catch {} });
 
 // ---------- listening: the device's own speech recognition ----------
 // Honesty note surfaced in the UI: on most platforms recognition is performed by
