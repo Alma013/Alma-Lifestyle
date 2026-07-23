@@ -4,7 +4,7 @@ import { el, icon, openModal, closeModal, toast, sparkline } from "./ui.js";
 import { WHY_CARDS, NUDGES, HABITS } from "./data.js";
 import { WHY_CARDS_V2, EXPERTS, METHOD_CARD, LI_TABLE } from "./data2.js";
 import { exportJournal, importJournal } from "./idb.js";
-import { voiceAvailable, speak, stopSpeaking, rankedVoices, setVoiceByName } from "./voice.js";
+import { HUMAN_READINGS, getReading, saveReading, removeReading, playReading, stopReading } from "./voice.js";
 import {
   store, eligibleRecipes, recipesForLiFoods, DAY_KEYS, DAY_NAMES, todayISO, mondayOf, dateOfDayKey, fmtDay,
   weekHabitSummary, toggleHabit, hashPin, uid,
@@ -730,39 +730,42 @@ export function renderSettings(main, navigate) {
           }, label))),
     ),
     el("div", { class: "card" },
-      el("h2", {}, "The reading voice"),
-      el("p", { class: "muted" }, "When it is on, Harta can read passages, prompts and techniques aloud with your device\u2019s own voice, so the words can reach you with your eyes closed. Nothing is sent anywhere; the voice lives on the device."),
-      voiceAvailable()
-        ? el("div", {},
-            el("div", { class: "btn-row" },
-              el("button", { class: "chip" + (s.voiceOn ? " on" : ""), onclick: () => { store.update({ voiceOn: !s.voiceOn }); renderSettings(main, navigate); } }, s.voiceOn ? "Voice on" : "Voice off"),
-              s.voiceOn ? el("button", { class: "btn ghost small", onclick: () => speak("Know first, then choose. This is the voice that will read to you.") }, "Hear a sample") : null,
-            ),
-            s.voiceOn ? (() => {
-              const sel = el("select", { "aria-label": "Choose the reading voice", style: "margin-top:0.6rem" });
-              const ranked = rankedVoices().slice(0, 12);
-              for (const vo of ranked) sel.append(el("option", { value: vo.name, selected: s.voiceName === vo.name ? "" : null }, vo.name.replace(/ \(.*\)/, "") + " · " + vo.lang));
-              sel.addEventListener("change", () => { setVoiceByName(sel.value); speak("This is how I sound. Keep me, or choose another."); });
-              return el("div", { class: "field", style: "margin-top:0.4rem" }, el("label", {}, "Which voice"), sel,
-                el("p", { class: "hint" }, "The warmest voices are listed first. ",
-                  el("button", { class: "link", onclick: () => {
-                    openModal(
-                      el("h2", {}, "Make the voice genuinely human"),
-                      el("p", { class: "muted" }, "The robotic sound is the device\u2019s basic voice. Every phone and computer hides far better ones; they just need downloading once. After that, come back here and pick the new voice from the list."),
-                      el("h3", {}, "iPhone and iPad"),
-                      el("p", { class: "muted", style: "font-size:0.9rem" }, "Settings \u2192 Accessibility \u2192 Spoken Content \u2192 Voices \u2192 English. Download an Enhanced or Premium voice (Karen and Matilda are the Australian ones; Zoe and Ava are lovely too). The Premium ones are near-human."),
-                      el("h3", {}, "Mac"),
-                      el("p", { class: "muted", style: "font-size:0.9rem" }, "System Settings \u2192 Accessibility \u2192 Spoken Content \u2192 System Voice \u2192 Manage Voices. Tick the Premium versions and let them download."),
-                      el("h3", {}, "Android"),
-                      el("p", { class: "muted", style: "font-size:0.9rem" }, "Settings \u2192 Accessibility \u2192 Text-to-speech output \u2192 Google engine \u2192 Install voice data, and pick a higher-quality English voice."),
-                      el("h3", {}, "Windows"),
-                      el("p", { class: "muted", style: "font-size:0.9rem" }, "Settings \u2192 Time and language \u2192 Speech \u2192 Add voices. The Natural voices are the good ones."),
-                      el("div", { class: "notice", style: "margin-top:0.6rem" }, "Everything stays on the device either way: the voice is downloaded once and speaks locally, so the privacy promise holds."),
-                    );
-                  } }, "Make it sound human: the two-minute fix")));
-            })() : null,
-          )
-        : el("p", { class: "tiny" }, "This device does not offer speech; the words will wait in writing."),
+      el("h2", {}, "A human voice"),
+      el("p", { class: "muted" }, "The synthetic voices are gone. Where the app once spoke, it can now play a real human: you. Record these three short readings once, in a quiet minute, and they will be offered in the right places: the blessing at the day\u2019s threshold, the words that close the evening, and your own voice pacing the breath. Nothing leaves the device."),
+      ...HUMAN_READINGS.map(([key, label, sub]) => (() => {
+        const status = el("span", { class: "tiny" }, "");
+        const playBtn = el("button", { class: "btn ghost small", style: "display:none", onclick: () => playReading(key) }, "Play");
+        const delBtn = el("button", { class: "link", style: "display:none", onclick: async () => { await removeReading(key); toast("Removed"); renderSettings(main, navigate); } }, "remove");
+        getReading(key).then((e) => { if (e) { playBtn.style.display = ""; delBtn.style.display = ""; status.textContent = "recorded"; } });
+        let rec = null, chunks = [];
+        const recLabel = el("span", {}, "Record");
+        const recBtn = el("button", { class: "btn secondary small", onclick: async () => {
+          if (rec && rec.state === "recording") { rec.stop(); return; }
+          try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            chunks = [];
+            rec = new MediaRecorder(stream);
+            rec.ondataavailable = (e) => chunks.push(e.data);
+            rec.onstop = async () => {
+              stream.getTracks().forEach((tr) => tr.stop());
+              const blob = new Blob(chunks, { type: rec.mimeType || "audio/webm" });
+              await saveReading(key, blob);
+              recLabel.textContent = "Record again";
+              recBtn.classList.remove("danger");
+              toast("Kept, in your voice");
+              renderSettings(main, navigate);
+            };
+            rec.start();
+            recLabel.replaceChildren(el("span", { class: "record-dot" }), " Recording\u2026 tap to keep");
+            recBtn.classList.add("danger");
+          } catch { toast("Microphone permission was declined"); }
+        } }, icon("mic", 14), recLabel);
+        return el("div", { style: "margin-bottom:0.9rem" },
+          el("div", { class: "card-title-row" }, el("h3", {}, label), status),
+          el("p", { class: "tiny", style: "margin:0 0 0.4rem" }, sub),
+          el("div", { class: "btn-row" }, recBtn, playBtn, delBtn),
+        );
+      })()),
     ),
     el("div", { class: "card flat" },
       el("h2", {}, "The promises"),

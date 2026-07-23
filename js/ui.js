@@ -1,5 +1,5 @@
 // Harta · UI helpers
-import { stopSpeaking } from "./voice.js";
+import { stopReading } from "./voice.js";
 
 export function el(tag, attrs = {}, ...children) {
   const node = document.createElement(tag);
@@ -94,7 +94,7 @@ export function openModal(...children) {
   return modal;
 }
 export function closeModal() {
-  stopSpeaking(); // a closed window is a silent window, always
+  stopReading(); // a closed window is a silent window, always
   const done = modalOnClose; modalOnClose = null;
   document.getElementById("modal-root").replaceChildren();
   document.getElementById("app").inert = false;

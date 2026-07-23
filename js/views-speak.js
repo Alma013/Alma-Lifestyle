@@ -4,7 +4,7 @@
 import { el, toast, openModal, icon } from "./ui.js";
 import { store } from "./store.js";
 import { COUNSEL_WHO, COUNSEL_WANT, COUNSEL_PLAYS, SPEAK_LESSONS, SPEAK_NOTE } from "./data2.js";
-import { speak as speakAloud, voiceAvailable, listenOnce, listenAvailable, stopSpeaking } from "./voice.js";
+import { listenOnce, listenAvailable, stopReading } from "./voice.js";
 import { addJournalEntry } from "./idb.js";
 import { uid } from "./store.js";
 
@@ -73,12 +73,12 @@ export function renderCounsel(main) {
         ...play.say.map((x) => el("p", { class: "muted", style: "font-style:italic;margin:0.2rem 0" }, x)),
         el("div", { class: "notice warm", style: "margin-top:0.7rem" }, el("strong", {}, "Do not: "), play.avoid),
         el("div", { class: "source-line" }, "Built from: " + play.source + "."),
-        voiceAvailable() && store.get().voiceOn ? el("button", { class: "btn secondary small", style: "margin-top:0.7rem", onclick: () => speakAloud(readable) }, "Read it to me") : null,
+
       ),
       el("p", { class: "tiny" }, "General wisdom from named frameworks, tailored by your choices; it cannot know the people involved the way you do. For anything involving safety, a professional beats a playbook, today."),
     );
     result.scrollIntoView({ behavior: "smooth", block: "start" });
-    if (voiceAvailable() && store.get().voiceOn) speakAloud(readable, "inform");
+
   };
 
   main.replaceChildren(
@@ -99,7 +99,7 @@ export function renderCounsel(main) {
           let rec = null, active = false;
           const b = el("button", { class: "btn ghost small", onclick: () => {
             if (active) { try { rec?.stop(); } catch {} return; }
-            active = true; stopSpeaking(); b.classList.add("danger");
+            active = true; b.classList.add("danger");
             b.replaceChildren(el("span", { class: "record-dot" }), " Listening\u2026 tap when done");
             rec = listenOnce({
               onText: (fin, interim) => { situation.value = (fin + " " + interim).trim(); },
@@ -113,7 +113,7 @@ export function renderCounsel(main) {
           return b;
         })() : null,
       ),
-      el("p", { class: "tiny" }, "Speak it if that is easier: the counsel listens, reads what you say, and answers aloud when the reading voice is on."),
+      el("p", { class: "tiny" }, "Speak it if that is easier: the counsel listens and writes what you say, then answers on screen."),
     ),
     result,
   );
@@ -136,7 +136,7 @@ export function renderSpeak(main) {
           el("p", { style: "margin-top:0.8rem" }, l.body),
           el("div", { class: "notice", style: "margin-top:0.6rem" }, el("strong", {}, "Practice: "), l.practice),
           el("div", { class: "source-line" }, "Source: " + l.source + "."),
-          voiceAvailable() && store.get().voiceOn ? el("button", { class: "btn secondary small", style: "margin-top:0.7rem", onclick: () => speakAloud(l.title + ". " + l.body + " Practice: " + l.practice) }, "Read it to me") : null,
+
           listenAvailable() ? (() => {
             let rec = null, active = false;
             const live = el("p", { class: "muted", style: "font-style:italic;min-height:1.4rem;margin-top:0.6rem" }, "");

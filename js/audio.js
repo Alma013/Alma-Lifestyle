@@ -190,6 +190,12 @@ function chimesEngine() {
 
 const TONAL_ENGINES = { handpan: handpanEngine, bowls: bowlsEngine, kalimba: kalimbaEngine, chimes: chimesEngine };
 
+// one soft bowl strike, usable outside any soundscape (the meditation's stage bell)
+export function bellOnce() {
+  ensureCtx();
+  toneVoice(261.63, ctx.currentTime, { partials: [[1, 1], [1.003, 0.8], [2.71, 0.22]], attack: 0.04, decay: 8, gain: 0.14 });
+}
+
 export function playScape(scape) {
   ensureCtx();
   stopScape(0.15);

@@ -4,7 +4,7 @@
 import { el, openModal, closeModal, toast, icon } from "./ui.js";
 import { store, dayKeyToday, recipeById, eatingWindow, fmtClock, toggleHabit, todayISO } from "./store.js";
 import { passageForToday, COUNSEL_PLAYS } from "./data2.js";
-import { speak, stopSpeaking, listenOnce, listenAvailable, voiceAvailable } from "./voice.js";
+import { listenOnce, listenAvailable } from "./voice.js";
 
 function answer(text) {
   const q = text.toLowerCase();
@@ -49,7 +49,7 @@ function answer(text) {
 }
 
 export function openTalk() {
-  if (!listenAvailable() || !voiceAvailable()) {
+  if (!listenAvailable()) {
     toast("This device does not offer speech in the browser"); return;
   }
   let rec = null;
@@ -58,7 +58,6 @@ export function openTalk() {
   const holdBtn = el("button", { class: "btn", style: "width:100%" }, icon("mic", 18), " Hold to talk");
   const start = (e) => {
     e.preventDefault();
-    stopSpeaking();
     reply.textContent = "";
     transcript.textContent = "Listening…";
     rec = listenOnce({
@@ -67,7 +66,6 @@ export function openTalk() {
         transcript.textContent = finalText ? "“" + finalText + "”" : "I did not catch that.";
         const a = answer(finalText);
         reply.textContent = a;
-        if (store.get().voiceOn) speak(a, "inform");
       },
     });
   };
@@ -76,7 +74,7 @@ export function openTalk() {
   holdBtn.addEventListener("pointerup", stop);
   holdBtn.addEventListener("pointerleave", stop);
   openModal(
-    { onClose: () => { stop(); stopSpeaking(); } },
+    { onClose: () => { stop(); } },
     el("h2", {}, "Talk to Harta"),
     el("p", { class: "tiny" }, "Ask about tonight's dinner, the eating window, today's passage, log a walk or water, or name a hard moment. One honest note: listening uses your device's speech service, which on most phones processes the audio through the platform; if that matters today, type instead."),
     holdBtn,
